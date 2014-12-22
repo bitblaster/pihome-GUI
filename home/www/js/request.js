@@ -1,8 +1,9 @@
 
 
 function request(url, method, data, callback) {
-	var http = new XMLHttpRequest;
-	if (!http)
+
+	var xmlHttp = new XMLHttpRequest;
+	if (!xmlHttp)
 		return false;
 	var _data;
 	if (data != null && typeof data == "object") {
@@ -13,57 +14,56 @@ function request(url, method, data, callback) {
 	} else {
 		_data = data;
 	}
+
 	method = method.toUpperCase();
 	if (method == "POST") {
-		http.open(method, url, true);
-		http.setRequestHeader("Method", "POST "+url+" HTTP/1.1");
-		http.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
+		xmlHttp.open(method, url, true);
+		xmlHttp.setRequestHeader("Method", "POST "+url+" HTTP/1.1");
+		xmlHttp.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
 	} else {
 		if (_data)
 			url += (url.indexOf("?") == -1 ? "?" : "&") + _data;
 		_data = "";
 		//alert(url);
-		http.open(method, url, true);
+		xmlHttp.open(method, url, true);
 	}
-	if (callback)
-		http.onreadystatechange = function() {
-			if (http.readyState == 4) {
-				http.onreadystatechange = function(){};
-				callback(http, data);
+	if (callback) {
+		xmlHttp.onreadystatechange = function() {
+			if (xmlHttp.readyState == 4) {
+				xmlHttp.onreadystatechange = function(){};
+				
+				if(xmlHttp.status!=200) {
+					$('.toast').text("Errore durante la chiamata al server: " + xmlHttp.responseText).fadeIn(400).delay(3000).fadeOut(400); 
+				}
+				else {
+					$('.toast').text("Comando eseguito correttamente").fadeIn(400).delay(3000).fadeOut(400); 
+					callback(xmlHttp, data);
+				}
 			}
 		};
-	http.send(_data);
-	return http;
+	}
+	xmlHttp.send(_data);
+	return xmlHttp;
 }
 
+function switchDevice(deviceId, action){
+	var lampImgId = "lampImg_" + deviceId;
 	
-
-function ac(letter){
-	var currentid = letter.split("_")[0];
-	var currentstatus = letter.split("_")[1];
-	var lamp = "lamp_" + currentid;
-	var btn1 = "btn1_" + currentid;
-	var btn2 = "btn2_" + currentid;		
-		if(currentstatus == "off"){  
-			document.getElementById(lamp).src="images/lamp_off.png";
-			document.getElementById(btn1).src="images/on_off.png";
-			document.getElementById(btn2).src="images/off_on.png";
-			request('request.php', 'GET', {s: letter}, function(){ } );
-		}else{
-			document.getElementById(lamp).src="images/lamp_on.png";
-			document.getElementById(btn1).src="images/on_on.png";
-			document.getElementById(btn2).src="images/off_off.png";
-			request('request.php', 'GET', {s: letter}, function(){ } );   			
-		}
+	// TODO: jquerizzare le function
+	if(action == "off") {  
+		request('request.php', 'GET', {"switchDevice": deviceId, "action": action}, function(){ document.getElementById(lampImgId).src="images/lamp_off.svg"; } );
+	}
+	else if(action == "on") {  
+		request('request.php', 'GET', {"switchDevice": deviceId, "action": action}, function(){ document.getElementById(lampImgId).src="images/lamp_on.svg"; } );
+	}
+	else {
+		request('request.php', 'GET', {"switchDevice": deviceId, "action": action}, function(){ document.getElementById(lampImgId).src="images/lamp_unk.svg"; } );
+	}
 }
 	
-
-
 function refresh(){
  	$('#lights').load('lights.php');
- }	 
- 
- 
+}	  
  
 function alloff(){
  	if(confirm('All Devices off?')){
@@ -71,6 +71,37 @@ function alloff(){
 	}
 }
 
+function toggleSchedule(deviceId, type) {
+	if($('#sched_' + deviceId).is(':hidden')) {
+		$('.schedule').hide();
+		$('#sched_' + deviceId + '_content').load('sched.php?deviceId=' + deviceId + '&type=' + type,
+			function() {
+				$('#sched_' + deviceId).toggle();
+			}
+		);
+	}
+	else
+		$('#sched_' + deviceId).toggle();
+}	
 
+function addJob(deviceId, type) {
+	request('request.php', 'GET', {addJob: deviceId}, function(){ $('#sched_' + deviceId + '_content').load('sched.php?deviceId=' + deviceId + '&type=' + type);} );
+}
+
+function removeJob(jobId, deviceId, type) {
+	request('request.php', 'GET', {removeJob: jobId}, function(){ $('#sched_' + deviceId + '_content').load('sched.php?deviceId=' + deviceId + '&type=' + type); } );
+}
+
+function saveJob(jobId, deviceId) {
 	
-	
+	var cronFields = $("#scheduleForm_" + deviceId + "_" + jobId).serialize() + "&";
+
+	jsonString = $("#scheduleForm_" + deviceId + "_" + jobId).serializeJSON();
+	if(jsonString.indexOf("*\",") > 0 || jsonString.indexOf(",\"*") > 0) {
+		alert("Selezionati valori incompatibili!");
+	}
+	else {
+		//alert(jsonString);
+		request('request.php', 'GET', {saveJob: jsonString}, function(){} );
+	}
+}

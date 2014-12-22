@@ -13,14 +13,14 @@
 ?>
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head>
-<title>PiHome Admin Panel</title>
+<title>PiHome - Pannello di controllo</title>
 <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
 <meta http-equiv="Content-Style-Type" content="text/css" />
 <meta name="viewport" content="width=device-width, user-scalable=no" />
 <meta name="format-detection" content="telephone=yes">
 <link rel="shortcut icon" href="images/favicon.png" />
 <link rel="stylesheet" href="css/style.css" type="text/css" media="screen" />
-<script src="js/jquery.min.js"></script>
+<script src="../js/jquery-1.11.1.min.js"></script>
 <script src="js/tabcontent.js"></script>
 <script src="js/request.js"></script>
 <script type="text/javascript">
@@ -41,8 +41,8 @@
 <div id="tabcontainer">
 
 	<ul id="tabs" class="shadetabs">
-	<li><a href="#" rel="devices" class="selected">Devices</a></li>
-	<li><a href="#" rel="rooms">Rooms</a></li>
+	<li><a href="#" rel="devices" class="selected">Dispositivi</a></li>
+	<li><a href="#" rel="rooms">Zone</a></li>
 	</ul>
 	
 	<br><br>
@@ -57,15 +57,16 @@
 		<div id="add_device">
 		
 		<form id="formdevice" method="post">
-			<select name="aktiv">
-				<option value="1">enable</option>
-				<option value="0">disable</option>
-			</select>
-			<br><br>
-			Device Name:<br>
+			Nome Dispositivo:<br>
 			<input type="text" name="device_name">
 			<br><br>
-			Room:<br>
+			Stato:<br>
+			<select name="enabled">
+				<option value="1">Abilitato</option>
+				<option value="0">Disabilitato</option>		
+			</select>
+			<br><br>
+			Zona:<br>
 			<select name="room_id">
 				<? 
 				$ro=getRooms();
@@ -75,40 +76,37 @@
 				?>
 			</select>
 			<br><br>
-			Letter:<br>
-			<select name="letter">
-				<option value="A">A</option>
-				<option value="B">B</option>
-				<option value="C">C</option>
-				<option value="D">D</option>
+			Flag comando:<br>
+			<span class="flag">
+				A<input type="checkbox" name="flags" value="A" />&nbsp;
+				B<input type="checkbox" name="flags" value="B" />&nbsp;
+				C<input type="checkbox" name="flags" value="C" />&nbsp;
+				<!--D<input type="checkbox" name="flags" value="D"> -->
+			</span>
+			<br><br>
+			Tasto comando:<br>
+			<select name="code">
+				<? for ($x = 2; $x <= 10; $x+=2) {?>
+				<option value="<?=$x?>"><?=$x?></option>
+				<? } ?>
 			</select>
 			<br><br>
-			Code:<br>
-			<select name="c1">
-				<option value="0">0</option>
-				<option value="1">1</option>
+			Tipo interruttore:<br>
+			<select name="type">
+				<option value="simpleSwitch">Interruttore semplice (impulso inverte lo stato)</option>
+				<option value="delaySwitch">Interruttore con delay (impulso breve spegne, impulso lungo accende)</option>
 			</select>
-			<select name="c2">
-				<option value="0">0</option>
-				<option value="1">1</option>
+			<br><br>
+			Presenza interruttore locale:<br>
+			<select name="status">
+				<option value="0">No</option>
+				<option value="-1">Sì</option>
 			</select>
-			<select name="c3">
-				<option value="0">0</option>
-				<option value="1">1</option>
-			</select>
-			<select name="c4">
-				<option value="0">0</option>
-				<option value="1">1</option>
-			</select>
-			<select name="c5">
-				<option value="0">0</option>
-				<option value="1">1</option>
-			</select>
-			<br><br>				
-			Sort:<br>
+			<br><br>
+			Posizione:<br>
 			<input type="text" name="sort" size="10" value="0">				
 			<br><br>				
-			<span class="submit"><input type="button" onclick="add_device()" value="Add device"></span>	
+			<span class="submit"><input type="button" onclick="add_device()" value="Crea Dispositivo"></span>	
 		</form>
 
 		</div>
@@ -129,10 +127,10 @@
 		<div id="add_room">
 		
 			<form method="post" id="formroom">
-				Room Name:<br>
+				Nome Zona:<br>
 				<input type="text" name="room">
 				<br><br>
-				<span class="submit"><input type="button" onclick="add_room();" value="Add room"></span>
+				<span class="submit"><input type="button" onclick="add_room();" value="Crea Zona"></span>
 			</form>
 		
 		</div>
@@ -159,7 +157,7 @@ countries.init()
 
 <div id="copy"><?=getcopy();?></div>
 
-
+<div class='toast' style='display:none'></div>
 
 </body>
 </html>

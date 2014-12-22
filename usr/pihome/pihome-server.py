@@ -1,165 +1,293 @@
 #!/usr/bin/python
+from apscheduler.triggers.cron import CronTrigger
 
 # PiHome v1.0
 # http://pihome.harkemedia.de/
 # 
-# PiHome Copyright © 2012, Sebastian Harke
+# PiHome Copyright  2012, Sebastian Harke
 # Lizenz Informationen.
 # 
 # This work is licensed under the Creative Commons Namensnennung - Nicht-kommerziell - Weitergabe unter gleichen Bedingungen 3.0 Unported License. To view a copy of this license,
 # visit: http://creativecommons.org/licenses/by-nc-sa/3.0/.
-
+DEBUG=1
 
 import time
-import RPi.GPIO as GPIO
+if not DEBUG:
+    import RPi.GPIO as GPIO
 import cgi,time,string,datetime
 from os import curdir, sep, path
 from BaseHTTPServer import BaseHTTPRequestHandler, HTTPServer
+from Crypto.Cipher import Blowfish
+from base64 import b64decode
+import MySQLdb as mdb
+from fuzzywuzzy import fuzz
+from fuzzywuzzy import process
+from apscheduler.schedulers.background import BackgroundScheduler
+from datetime import datetime, timedelta
+import json
+import logging
+import threading
 
+logFormatter = logging.Formatter("%(asctime)s [%(threadName)-12.12s] [%(levelname)-5.5s]  %(message)s")
+if not DEBUG:
+    fileHandler = logging.FileHandler("/var/log/pihome.log")
+    fileHandler.setFormatter(logFormatter)
+    logging.getLogger().addHandler(fileHandler)
 
-# Set GPIO Pins !! Do Not Change !!
-c1 = 17
-c2 = 22
-c3 = 10
-c4 = 9
-c5 = 11
-on = 18
-off = 23
-a = 24
-b = 25
-c = 8
-d = 7
+consoleHandler = logging.StreamHandler()
+consoleHandler.setFormatter(logFormatter)
+logging.getLogger().addHandler(consoleHandler)
+
+logging.getLogger().setLevel(logging.DEBUG)
+#logging.basicConfig(filename='/var/log/pihome.log',level=logging.DEBUG)
 
 # Set to use IO No.
-GPIO.setmode(GPIO.BCM)
+if not DEBUG:
+    GPIO.setmode(GPIO.BOARD)
 
+# Mappatura pulsanti telecomando / GPIO del Raspberry
+ioPorts={"2":11, "4":12, "6":13, "8":15, "10":16, "12":18, "A":19, "B": 21, "C":23}
 
-GPIO.setup(a, GPIO.OUT)
-GPIO.output(a, False)
+devicesByName={}
+devicesById={}
 
-GPIO.setup(b, GPIO.OUT)
-GPIO.output(b, False)
+threadLock = threading.Lock()
+scheduler = BackgroundScheduler()
 
-GPIO.setup(c, GPIO.OUT)
-GPIO.output(c, False)
-
-GPIO.setup(d, GPIO.OUT)
-GPIO.output(d, False)
-
-GPIO.setup(on, GPIO.OUT)
-GPIO.output(on, False)
-
-GPIO.setup(off, GPIO.OUT)
-GPIO.output(off, False)
-
-GPIO.setup(c1, GPIO.OUT)
-GPIO.output(c1, False)
-
-GPIO.setup(c2, GPIO.OUT)
-GPIO.output(c2, False)
-
-GPIO.setup(c3, GPIO.OUT)
-GPIO.output(c3, False)
-
-GPIO.setup(c4, GPIO.OUT)
-GPIO.output(c4, False)
-
-GPIO.setup(c5, GPIO.OUT)
-GPIO.output(c5, False)
-
-
+logging.info("Setup GPIO ports: " + ", ".join(str(x) for x in ioPorts.values()))
+             
+for k, port in ioPorts.iteritems():
+    if not DEBUG:
+        GPIO.setup(port, GPIO.OUT)
+        GPIO.output(port, False)
 
 class Handler(BaseHTTPRequestHandler):
     def do_GET(self):
         try:
-        	self.send_response(200)
-        	self.send_header('Content-type', 'text/html')
-        	self.end_headers()        	
-        	
-        	datastring = str(self.path).split("request/")[1]        	
-        	letter = datastring.split("/")[0]
-        	letter = string.upper(letter)
-        	status = datastring.split("/")[1]
-        	status = string.lower(status)
-        	code = datastring.split("/")[2]        	
-        	code1 = code[0]
-        	code2 = code[1]
-        	code3 = code[2]
-        	code4 = code[3]
-        	code5 = code[4]
-        	
-        	# Testing
-        	#self.wfile.write(datastring)
-	       	
-	       	if letter != "":
-				if letter == "A":
-					GPIO.output(a, True)
-				elif letter == "B":
-					GPIO.output(b, True)
-				elif letter == "C":
-					GPIO.output(c, True)
-				elif letter == "D":
-					GPIO.output(d, True)
-				
-				if status == "on":
-					GPIO.output(on, True)
-				elif status == "off":
-					GPIO.output(off, True)
-				
-				if code1 == "1":
-					GPIO.output(c1, True)
-				if code2 == "1":
-					GPIO.output(c2, True)
-				if code3 == "1":
-					GPIO.output(c3, True)
-				if code4 == "1":
-					GPIO.output(c4, True)
-				if code5 == "1":
-					GPIO.output(c5, True)
-				
-				time.sleep(1)
-				
-				if letter == "A":
-					GPIO.output(a, False)
-				elif letter == "B":
-					GPIO.output(b, False)
-				elif letter == "C":
-					GPIO.output(c, False)
-				elif letter == "D":
-					GPIO.output(d, False)
-					
-				if status == "on":
-					GPIO.output(on, False)
-				elif status == "off":
-					GPIO.output(off, False)
-				
-				if code1 == "1":
-					GPIO.output(c1, False)
-				if code2 == "1":
-					GPIO.output(c2, False)
-				if code3 == "1":
-					GPIO.output(c3, False)
-				if code4 == "1":
-					GPIO.output(c4, False)
-				if code5 == "1":
-					GPIO.output(c5, False)
-				
-				time.sleep(0.5)
-		return
-	except IOError:
-		self.send_error(404,'File Not Found: ' + self.path)
+            start = time.time()
+            
+            #print "Path: " + self.path
+            encryptedString = str(self.path)[1:]
+            #print "Enc string: " + encryptedString
+            cipher = Blowfish.new('daFj7mGJHo956SIg', Blowfish.MODE_CBC, '43093287')
+            datastring = cipher.decrypt(b64decode(encryptedString))
+            outStr=""
+            # usiamo rstrip("\x00") per rimuovere caratteri terminatori di padding usati dal Blowfish
+            split = map(lambda x: x.rstrip("\x00").strip(), datastring.split("/"))
+            
+            logging.debug("Decrypted datastring: " + datastring)
+            
+            if split[0] == "switchDevice":
+                if len(split) < 3:
+                    raise Exception, "Not enough parameters for command request. Datastring: " + datastring
+                
+                deviceId = string.upper(split[1])            
+                logging.info("Executing switchDevice for device: " + deviceId)
+                                        
+                action = split[2]
+                if action not in ["on", "off", "toggle"]:
+                    raise Exception, "Invalid action for command request: " + action
+                    
+                executeManualCommand(deviceId, action)
+            elif split[0] == "switchLampFuzzy":
+                if len(split) < 3:
+                    raise Exception, "Not enough parameters for command requestFuzzy. Datastring: " + datastring
 
+                logging.info("Executing fuzzy matching '" + split[1] + "' over " + str(devicesByName.keys()))
+                deviceFound = process.extractOne(split[1], devicesByName.keys(), score_cutoff=50)
+                if deviceFound is not None:
+                    device = devicesByName[deviceFound[0]]
+                    logging.debug("Matched device '" + device["name"] + "'")
+                    
+                    action = split[2]
+                    if action not in ["on", "off", "toggle"]:
+                        raise Exception, "Invalid action for command requestFuzzy: " + action
+                    
+                    executeManualCommand(device["id"], action)
+                else:
+                    raise Exception, "No device found matching '" + split[1] + "'"
+            elif split[0] == "reloadDevices":
+                logging.info("Executing reloadDevices")
+                loadDevices()
+            elif split[0] == "readJobs":
+                if len(split) < 2:
+                    deviceId = None
+                    logging.info("Executing full readJobs")
+                else:
+                    deviceId = split[1]
+                    logging.info("Executing readJobs for device: " + deviceId)
+                
+                jobs = scheduler.get_jobs()
+                for job in jobs:
+                    if deviceId and job.args[0] != deviceId:
+                        continue
+                    
+                    cronFields = {a.name : a.__str__() for a in job.trigger.fields}
+                    jobMap = {"jobID": job.id, "deviceId": job.args[0], "action": job.args[1], "cronFields": cronFields}
+                    #print json.dumps(jobMap)
+                    outStr += json.dumps(jobMap) + "|"
+                outStr = outStr[:-1]
+                
+                logging.debug("Jobs read for deviceId '" + str(deviceId) + "':" + outStr)
+            elif split[0] == "addJob":
+                deviceId = split[1]
+                logging.info("Executing addJob for device: " + deviceId)
+                
+                #job = scheduler.add_job(scheduledAction, 'cron', coalesce=True, id=None, args=[deviceId, "disabled"], year="*", month="*", day="*", day_of_week="*", hour="*", minute="*", second="0")
+                triggerArgs = {"year":"*", "month":"*", "day":"*", "day_of_week":"*", "hour":"*", "minute":"*", "second":"0"}
+                job = scheduler.add_job(executeScheduledCommand, trigger='cron', coalesce=True, id=None, args=[deviceId, "disabled"], **triggerArgs)
+                scheduler.pause_job(job.id)
+            elif split[0] == "saveJob":
+                jsonString = split[1]
+                logging.info("Executing saveJob: jsonString=" + jsonString)
 
+                jsonObj = json.loads(jsonString)
+                
+                jobId = jsonObj["jobID"]
+                deviceId = jsonObj["deviceId"]
+                action = jsonObj["action"]
+                cronFields = jsonObj["cronFields"]
+                f = {key : ','.join(value) for key, value in cronFields.iteritems()}
+                
+                triggerArgs = {"year":f["year"], "month":f["month"], "day":f["day"], "day_of_week":f["day_of_week"], "hour":f["hour"], "minute":f["minute"], "second":f["second"]}
+                job = scheduler.add_job(executeScheduledCommand, trigger='cron', coalesce=True, id=jobId, args=[deviceId, action], replace_existing=True, **triggerArgs)
 
+                #trigger = CronTrigger(year=f["year"], month=f["month"], day=f["day"], day_of_week=f["day_of_week"], hour=f["hour"], minute=f["minute"], second=f["second"])
+                #jobFields = {"trigger": trigger, "args": [deviceId, action]}
+                #job = scheduler.modify_job(jobId, **jobFields)
+                if action == "disabled":
+                    scheduler.pause_job(job.id)
+                #else:
+                 #   scheduler.pause_job(job.id)
+            elif split[0] == "removeJob":
+                jobId = split[1]
+                logging.info("Executing removeJob for job: " + jobId)
+                
+                scheduler.remove_job(jobId)
+            else:
+                raise Exception, "Received invalid datastring: " + datastring
+                
+            end = time.time()
+            logging.debug("Command processed in " + str(end - start) + " sec.")
+            
+            self.send_response(200)
+            self.send_header('Content-type', 'text/html')
+            self.end_headers()
+            self.wfile.write(outStr)
+            return
+        except IOError, e:
+            logging.exception(e)
+            self.send_error(404,'File Not Found: ' + self.path)
+        except Exception, msg:
+            logging.exception(msg)
+            self.send_error(500, str(msg))
+
+def executeScheduledCommand(deviceId, action):
+    executeCommand(deviceId, action, True)
+    
+def executeManualCommand(deviceId, action):
+    t = threading.Thread(target=executeCommand, args=(deviceId, action, False))
+    t.start()
+
+def executeCommand(deviceId, action, scheduled):
+    
+    device = devicesById[deviceId]
+    flags = device["flags"]
+    code = device["code"]
+    
+    # Get lock to synchronize threads
+    logging.debug("Acquiring lock...")
+    threadLock.acquire()
+
+    try:
+        logging.debug("Lock acquired!")
+        
+        logStr = "Flag ports: "
+        for flag in flags:
+            logStr += str(ioPorts[flag]) + ","
+            if not DEBUG:
+                GPIO.output(ioPorts[flag], True)
+        logStr = logStr [:-1] + ". "
+        logStr += "Command port:" + str(ioPorts[code])
+        logging.debug(logStr)
+        
+        # Ci assicuriamo che il transistor abbia switchato nel telecomando
+        time.sleep(0.05)
+        
+        if not DEBUG:
+            GPIO.output(ioPorts[code], True)
+        if action == "off":
+            delay=0.25
+        else:
+            delay=1.2
+            
+        logging.debug("Sleeping for: " + str(delay) + "seconds")
+        time.sleep(delay)
+        
+        if not DEBUG:
+            GPIO.output(ioPorts[code], False)
+        
+        for flag in flags:
+            if not DEBUG:
+                GPIO.output(ioPorts[flag], False)
+    except Exception, msg:
+        logging.exception(msg)
+        self.send_error(500, str(msg))
+        
+    # Free lock to release next thread
+    threadLock.release()
+    logging.debug("Lock released!")
+
+    if device is not None and device["type"] == "delaySwitch" and device["status"] != "-1":
+        try:
+            logging.debug("Cambio stato al dispositivo" + str(device))
+            con = mdb.connect('localhost', 'root', 'root', 'pihome')
+            cur = con.cursor()
+            if action == "off":
+                status="0"
+            else:
+                status="1"
+        
+            cur.execute ("UPDATE pi_devices SET status=%s WHERE id=%s", (status, deviceId))
+            con.commit()
+            cur.close()
+            con.close()
+        except Exception, msg:
+            logging.exception(msg)
+            self.send_error(500, str(msg))
+        
+def loadDevices():
+    con = mdb.connect('localhost', 'root', 'root', 'pihome')
+    cur = con.cursor()
+    cur.execute("select id, device, flags, code, type, status from pi_devices")
+    rows = cur.fetchall()
+    for row in rows:
+        devicesByName[row[1]]={"id":row[0], "name":row[1], "flags":row[2], "code":row[3]}
+        devicesById[str(row[0])]={"name":row[1], "flags":row[2], "code":row[3], "type":row[4], "status":row[5]}
+    cur.close()
+    con.close()
+    
+    logging.debug("Read " + str(len(devicesByName)) + " devices: " + str(devicesByName))
+    return devicesByName
+    
 def main():
     try:
-        srv = HTTPServer(('', 8888), Handler)
-        print 'START PiHome SERVER'
+        logging.info('-------- PiHome startup --------')
+        loadDevices()
+        
+        scheduler.add_jobstore('sqlalchemy', url='mysql://root:root@localhost/pihome')
+        #scheduler.add_job(scheduledAction, 'cron', month='6-8,11-12', day='3rd fri', hour='0-3')
+        #scheduler.add_job(scheduledAction, 'cron', month='1,2,3', hour='3', minute="18")
+        scheduler.start()
+    
+        srv = HTTPServer(('', 8444), Handler)
+        logging.info('PiHome Server STARTED')
         srv.serve_forever()
     except KeyboardInterrupt:
-        print ' STOP PiHome SERVER'
+        logging.info('PiHome Server STOPPED')
+        if not DEBUG:
+            GPIO.cleanup()
         srv.socket.close()
-
 
 if __name__ == '__main__':
   main()

@@ -14,21 +14,54 @@
 include("configs/dbconfig.inc.php");
 include("configs/functions.inc.php");
 
-$value = $_GET["s"];
-
-if($_GET["s"]){
-
-	$cutvalue=explode("_", $value);
-	$lid  = $cutvalue[0];
-	$stat = $cutvalue[1];
-
-	setLightStatus($lid,$stat);
-	$code = getCodeById($lid);
-
-	#exec("echo 'klick ".$lid." ".$stat." ".$code['letter']." ".$code['code']."' >> klick.txt  ");
-
-	file_get_contents("http://localhost:8888/request/".$code['letter']."/".$stat."/".$code['code']);
+if(isset($_GET["switchDevice"])){
+	$deviceId = $_GET["switchDevice"];
+	$action = $_GET["action"];
+	
+	if(endsWith($action, "off"))
+		$action="off";
+	else
+		$action="on";
+		
+	$requestString = "switchDevice/".$deviceId."/".$action;
+	
+	callServer($requestString);
+}
+else if(isset($_GET["addJob"])) {
+	$deviceId = $_GET["addJob"];
+	$requestString = "addJob/".$deviceId;
+	callServer($requestString);
+}
+else if(isset($_GET["removeJob"])) {
+	$jobId = $_GET["removeJob"];
+	$requestString = "removeJob/".$jobId;
+	callServer($requestString);
+}
+else if(isset($_GET["saveJob"])) {
+	$jsonString = $_GET["saveJob"];
+	$requestString = "saveJob/".$jsonString;
+	callServer($requestString);
+}
+else {
+	http_response_code(500);
+	echo "request.php: parametri di chiamata non validi: ".$_SERVER['QUERY_STRING'];
+}
+function callServer($requestString) {
+	$result = file_get_contents("http://localhost:8444/".encrypt($requestString));
 	#exec("sudo python3.2 api.py A on 1 0 0 0 0 ");
 
+	if($result == false) {		
+		if(isset($http_response_header)) {
+			list($version,$status_code,$msg) = explode(' ',$http_response_header[0], 3);
+	
+			//error_log("PiHome server response: ".$http_response_header[0]."---".$status_code.", ".$msg);
+			http_response_code($status_code);
+			echo $msg;
+		}
+		else {
+			http_response_code(500);
+			echo "Server PiHome non raggiungibile";
+		}
+	}
 }
 ?>
