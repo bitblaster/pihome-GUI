@@ -9,7 +9,7 @@ from apscheduler.triggers.cron import CronTrigger
 # 
 # This work is licensed under the Creative Commons Namensnennung - Nicht-kommerziell - Weitergabe unter gleichen Bedingungen 3.0 Unported License. To view a copy of this license,
 # visit: http://creativecommons.org/licenses/by-nc-sa/3.0/.
-DEBUG=1
+DEBUG=0
 
 import time
 if not DEBUG:
@@ -201,7 +201,7 @@ def executeCommand(deviceId, action, scheduled):
 
     try:
         logging.debug("Lock acquired!")
-        
+    
         logStr = "Flag ports: "
         for flag in flags:
             logStr += str(ioPorts[flag]) + ","
@@ -217,11 +217,11 @@ def executeCommand(deviceId, action, scheduled):
         if not DEBUG:
             GPIO.output(ioPorts[code], True)
         if action == "off":
-            delay=0.25
+            delay=0.2
         else:
-            delay=1.2
+            delay=1
             
-        logging.debug("Sleeping for: " + str(delay) + "seconds")
+        logging.debug("Sleeping for: " + str(delay) + " seconds")
         time.sleep(delay)
         
         if not DEBUG:
