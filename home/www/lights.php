@@ -32,11 +32,11 @@ for($i=0;$i<count($lp);$i++){
 	    <? } else {?>
 <!--	    <span><a href="#" onclick="javascript:switchDevice('<?=$lp[$i]["id"];?>', '<?=$lp[$i]["status"]=="-1" ? "toggleon" : "on";?>');"><button class="button-on pure-button" data-role="none">On</button></a></span>
 	    <span><a href="#" onclick="javascript:switchDevice('<?=$lp[$i]["id"];?>', '<?=$lp[$i]["status"]=="-1" ? "toggleoff" : "off";?>');"><button class="button-off pure-button" data-role="none">Off</button></a></span>
--->	    <span><a href="#" onclick="javascript:switchDevice('<?=$lp[$i]["id"];?>', 'on');"><button class="button-on pure-button" data-role="none">On</button></a></span>
-	    <span><a href="#" onclick="javascript:switchDevice('<?=$lp[$i]["id"];?>', 'off');"><button class="button-off pure-button" data-role="none">Off</button></a></span>
+-->	    <span><a href="#" onclick="javascript:switchDevice('<?=$lp[$i]["id"];?>', 'on');return false;"><button class="button-on pure-button" data-role="none">On</button></a></span>
+	    <span><a href="#" onclick="javascript:switchDevice('<?=$lp[$i]["id"];?>', 'off');return false;"><button class="button-off pure-button" data-role="none">Off</button></a></span>
 	    <? } ?>
 	    <? if(!$mobileClient) { ?>
-	    <span><a href="#" onclick="javascript:toggleSchedule('<?=$lp[$i]["id"];?>', '<?=$lp[$i]["type"];?>');"><button class="button-img pure-button" data-role="none"><img class="buttonImg" src="images/timer.svg" /></button></a></span>
+	    <span><a href="#" onclick="javascript:toggleSchedule('<?=$lp[$i]["id"];?>', '<?=$lp[$i]["type"];?>');return false;"><button class="button-img pure-button" data-role="none"><img class="buttonImg" src="images/timer.svg" /></button></a></span>
 	    <? } ?>
 	</td>
     </tr>

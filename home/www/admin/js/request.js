@@ -13,7 +13,7 @@ function request(url, method, data, callback) {
 		_data = data;
 	}
 	method = method.toUpperCase();
-	alert(url);
+	//alert(url);
 	if (method == "POST") {
 		xmlHttp.open(method, url, true);
 		xmlHttp.setRequestHeader("Method", "POST "+url+" HTTP/1.1");
