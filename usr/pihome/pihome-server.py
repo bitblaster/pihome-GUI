@@ -1,5 +1,6 @@
 #!/usr/bin/python
 from apscheduler.triggers.cron import CronTrigger
+import sys
 
 # PiHome v1.0
 # http://pihome.harkemedia.de/
@@ -9,8 +10,14 @@ from apscheduler.triggers.cron import CronTrigger
 # 
 # This work is licensed under the Creative Commons Namensnennung - Nicht-kommerziell - Weitergabe unter gleichen Bedingungen 3.0 Unported License. To view a copy of this license,
 # visit: http://creativecommons.org/licenses/by-nc-sa/3.0/.
-DEBUG=0
 
+if len(sys.argv) > 1 and sys.argv[1] == "1":
+    DEBUG=1
+    LOG_PATH="pihome.log"
+else:
+    DEBUG=0
+    LOG_PATH="/var/log/pihome.log"
+    
 import time
 if not DEBUG:
     import RPi.GPIO as GPIO
@@ -18,7 +25,7 @@ import cgi,time,string,datetime
 from os import curdir, sep, path
 from BaseHTTPServer import BaseHTTPRequestHandler, HTTPServer
 from Crypto.Cipher import Blowfish
-from base64 import b64decode
+import base64
 import MySQLdb as mdb
 from fuzzywuzzy import fuzz
 from fuzzywuzzy import process
@@ -29,10 +36,10 @@ import logging
 import threading
 
 logFormatter = logging.Formatter("%(asctime)s [%(threadName)-12.12s] [%(levelname)-5.5s]  %(message)s")
-if not DEBUG:
-    fileHandler = logging.FileHandler("/var/log/pihome.log")
-    fileHandler.setFormatter(logFormatter)
-    logging.getLogger().addHandler(fileHandler)
+
+fileHandler = logging.FileHandler(LOG_PATH)
+fileHandler.setFormatter(logFormatter)
+logging.getLogger().addHandler(fileHandler)
 
 consoleHandler = logging.StreamHandler()
 consoleHandler.setFormatter(logFormatter)
@@ -70,7 +77,7 @@ class Handler(BaseHTTPRequestHandler):
             encryptedString = str(self.path)[1:]
             #print "Enc string: " + encryptedString
             cipher = Blowfish.new('daFj7mGJHo956SIg', Blowfish.MODE_CBC, '43093287')
-            datastring = cipher.decrypt(b64decode(encryptedString))
+            datastring = cipher.decrypt(base64.urlsafe_b64decode(encryptedString))
             outStr=""
             # usiamo rstrip("\x00") per rimuovere caratteri terminatori di padding usati dal Blowfish
             split = map(lambda x: x.rstrip("\x00").strip(), datastring.split("/"))
@@ -89,9 +96,9 @@ class Handler(BaseHTTPRequestHandler):
                     raise Exception, "Invalid action for command request: " + action
                     
                 executeManualCommand(deviceId, action)
-            elif split[0] == "switchLampFuzzy":
-                if len(split) < 3:
-                    raise Exception, "Not enough parameters for command requestFuzzy. Datastring: " + datastring
+            elif split[0] == "switchDeviceFuzzy":
+                if len(split) < 2:
+                    raise Exception, "Not enough parameters for command switchDeviceFuzzy. Datastring: " + datastring
 
                 logging.info("Executing fuzzy matching '" + split[1] + "' over " + str(devicesByName.keys()))
                 deviceFound = process.extractOne(split[1], devicesByName.keys(), score_cutoff=50)
@@ -99,9 +106,12 @@ class Handler(BaseHTTPRequestHandler):
                     device = devicesByName[deviceFound[0]]
                     logging.debug("Matched device '" + device["name"] + "'")
                     
-                    action = split[2]
-                    if action not in ["on", "off", "toggle"]:
-                        raise Exception, "Invalid action for command requestFuzzy: " + action
+                    if "accend" in split[1] or "attiv" in split[1] or "invert" in split[1]:
+                        action = "on"
+                    elif "spegn" in split[1] or "disattiv" in split[1]:
+                        action = "off"
+                    else:
+                        raise Exception, "Invalid action for command switchDeviceFuzzy: " + split[1]
                     
                     executeManualCommand(device["id"], action)
                 else:
@@ -170,7 +180,7 @@ class Handler(BaseHTTPRequestHandler):
             end = time.time()
             logging.debug("Command processed in " + str(end - start) + " sec.")
             
-            self.send_response(200)
+            self.send_response(200, outStr)
             self.send_header('Content-type', 'text/html')
             self.end_headers()
             self.wfile.write(outStr)
@@ -188,9 +198,9 @@ def executeScheduledCommand(deviceId, action):
 def executeManualCommand(deviceId, action):
     t = threading.Thread(target=executeCommand, args=(deviceId, action, False))
     t.start()
+    #executeCommand(deviceId, action, False)
 
 def executeCommand(deviceId, action, scheduled):
-    
     device = devicesById[deviceId]
     flags = device["flags"]
     code = device["code"]
@@ -201,7 +211,7 @@ def executeCommand(deviceId, action, scheduled):
 
     try:
         logging.debug("Lock acquired!")
-    
+        
         logStr = "Flag ports: "
         for flag in flags:
             logStr += str(ioPorts[flag]) + ","
@@ -232,7 +242,8 @@ def executeCommand(deviceId, action, scheduled):
                 GPIO.output(ioPorts[flag], False)
     except Exception, msg:
         logging.exception(msg)
-        self.send_error(500, str(msg))
+        if not scheduled:
+            raise
         
     # Free lock to release next thread
     threadLock.release()
@@ -262,7 +273,7 @@ def loadDevices():
     cur.execute("select id, device, flags, code, type, status from pi_devices")
     rows = cur.fetchall()
     for row in rows:
-        devicesByName[row[1]]={"id":row[0], "name":row[1], "flags":row[2], "code":row[3]}
+        devicesByName[row[1]]={"id":str(row[0]), "name":row[1], "flags":row[2], "code":row[3]}
         devicesById[str(row[0])]={"name":row[1], "flags":row[2], "code":row[3], "type":row[4], "status":row[5]}
     cur.close()
     con.close()
@@ -290,5 +301,5 @@ def main():
         srv.socket.close()
 
 if __name__ == '__main__':
-  main()
+    main()
 
