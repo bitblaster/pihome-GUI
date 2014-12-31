@@ -20,7 +20,7 @@
 <meta name="format-detection" content="telephone=yes">
 <link rel="shortcut icon" href="images/favicon.png" />
 <link rel="stylesheet" href="css/style.css" type="text/css" media="screen" />
-<script src="../js/jquery-1.11.1.min.js"></script>
+<script src="js/jquery.min.js"></script>
 <script src="js/tabcontent.js"></script>
 <script src="js/request.js"></script>
 <script type="text/javascript">
