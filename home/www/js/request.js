@@ -73,7 +73,7 @@ function alloff(){
 
 function toggleSchedule(deviceId, type) {
 	if($('#sched_' + deviceId).is(':hidden')) {
-		$('.schedule').hide();
+		$('.deviceSchedule').hide();
 		$('#sched_' + deviceId + '_content').load('sched.php?deviceId=' + deviceId + '&type=' + type,
 			function() {
 				$('#sched_' + deviceId).toggle();
