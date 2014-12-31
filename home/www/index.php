@@ -43,7 +43,7 @@ include("configs/functions.inc.php");
 <body>
 
 <div id="nav">
-	<div><img src="images/pihome.svg" id="home" border="0"></div><a href="javascript:alloff()"><div class="separator"><img src="images/off.svg" border="0"></div><div>SPEGNI TUTTO</div></a><a href="javascript:refresh()"><div class="separator"><img src="images/refresh.svg" border="0" /></div><div>AGGIORNA</div></a>
+	<div><img src="images/pihome.svg" id="home" border="0"></div><a href="javascript:alloff()"><div class="separator"><img src="images/off.svg" border="0"></div><div><?=$L_ALL_OFF?></div></a><a href="javascript:refresh()"><div class="separator"><img src="images/refresh.svg" border="0" /></div><div><?=$L_REFRESH?></div></a>
 </div>
 
 
@@ -55,7 +55,7 @@ include("configs/functions.inc.php");
 
 
 <div id="settings">
-	<a href="admin/"><div><img src="images/settings.svg" border="0" /></div><div>IMPOSTAZIONI</div></a>
+	<a href="admin/"><div><img src="images/settings.svg" border="0" /></div><div><?=$L_SETTINGS?></div></a>
 </div>
 
 

@@ -1,11 +1,5 @@
 <?
 include("configs/functions.inc.php");
-
-$mesi = array('Gennaio', 'Febbraio', 'Marzo', 'Aprile',
-                'Maggio', 'Giugno', 'Luglio', 'Agosto',
-                'Settembre', 'Ottobre', 'Novembre','Dicembre');
-
-$giorni = array('Lunedì','Martedì','Mercoledì','Giovedì','Venerdì','Sabato','Domenica');
 		
 if(isset($_GET["deviceId"])) {
     $deviceId = $_GET["deviceId"];
@@ -20,10 +14,14 @@ if(isset($_GET["deviceId"])) {
     // jobId/devId/action/year;month;day;weekday;hour;minute;second
 ?>
     <div data-role="main" class="ui-content">
+<!--<?=$result?>-->
 	<table>
 <? foreach ($jobs as $job) { 
       $jobMap = json_decode($job, true);
       $jobId = $jobMap["jobID"];
+      if(!$jobId)
+	continue;
+	
       $cronFields = $jobMap["cronFields"];
 ?>
 	    <tr class="jobSchedule">
@@ -32,56 +30,56 @@ if(isset($_GET["deviceId"])) {
 		      <fieldset class="ui-field-contain">
 			<input type="hidden" name="jobID" value="<?=$jobId;?>">
 			<input type="hidden" name="deviceId" value="<?=$deviceId;?>">
-			<label>Secondo</label>
+			<label><?=$L_SCHED_SECOND?></label>
 			<select name="cronFields[second][]">
 			    <? for ($i = 0; $i <= 59; $i++) { ?>
 				<option value="<?=$i?>" <?=($cronFields["second"] === strval($i) ? ' selected="selected"' : '')?>><?=$i?></option>
 			    <? } ?>
 			</select>
 			&nbsp;&nbsp;
-			<label>Minuto</label>
+			<label><?=$L_SCHED_MINUTE?></label>
 			<select name="cronFields[minute][]" multiple="true">
-			    <option value="*" <?=(in_array("*", explode(",", $cronFields["minute"])) ? ' selected="selected"' : '')?>>Ogni minuto</option>
+			    <option value="*" <?=(in_array("*", explode(",", $cronFields["minute"])) ? ' selected="selected"' : '')?>><?=$L_SCHED_EVERY_MINUTE?></option>
 			    <? for ($i = 0; $i <= 59; $i++) { ?>
 				<option value="<?=$i?>" <?=(in_array(strval($i), explode(",", $cronFields["minute"])) ? ' selected="selected"' : '')?>><?=$i?></option>
 			    <? } ?>
 			</select>
 			&nbsp;&nbsp;
-			<label>Ora</label>
+			<label><?=$L_SCHED_HOUR?></label>
 			<select name="cronFields[hour][]" multiple="true">
-			    <option value="*" <?=(in_array("*", explode(",", $cronFields["hour"])) ? ' selected="selected"' : '')?>>Ogni ora</option>
+			    <option value="*" <?=(in_array("*", explode(",", $cronFields["hour"])) ? ' selected="selected"' : '')?>><?=$L_SCHED_EVERY_HOUR?></option>
 			    <? for ($i = 0; $i <= 23; $i++) { ?>
 				<option value="<?=$i?>" <?=(in_array(strval($i), explode(",", $cronFields["hour"])) ? ' selected="selected"' : '')?>><?=$i?></option>
 			    <? } ?>
 			</select>
 			&nbsp;&nbsp;
-			<label>Giorno</label>
+			<label><?=$L_SCHED_DAY?></label>
 			<select name="cronFields[day][]" multiple="true">
-			    <option value="*" <?=(in_array("*", explode(",", $cronFields["day"])) ? ' selected="selected"' : '')?>>Ogni giorno</option>
+			    <option value="*" <?=(in_array("*", explode(",", $cronFields["day"])) ? ' selected="selected"' : '')?>><?=$L_SCHED_EVERY_DAY?></option>
 			    <? for ($i = 1; $i <= 31; $i++) { ?>
 				<option value="<?=$i?>" <?=(in_array(strval($i), explode(",", $cronFields["day"])) ? ' selected="selected"' : '')?>><?=$i?></option>
 			    <? } ?>
 			</select>
 			&nbsp;&nbsp;
-			<label>Giorno Sett</label>
+			<label><?=$L_SCHED_DAY_OF_WEEK?></label>
 			<select name="cronFields[day_of_week][]" multiple="true">
-			    <option value="*" <?=(in_array("*", explode(",", $cronFields["day_of_week"])) ? ' selected="selected"' : '')?>>Ogni giorno</option>
+			    <option value="*" <?=(in_array("*", explode(",", $cronFields["day_of_week"])) ? ' selected="selected"' : '')?>><?=$L_SCHED_EVERY_DAY?></option>
 			    <? for ($i = 0; $i < 7; $i++) { ?>
-				<option value="<?=$i?>" <?=(in_array(strval($i), explode(",", $cronFields["day_of_week"])) ? ' selected="selected"' : '')?>><?=$giorni[$i]?></option>
+				<option value="<?=$i?>" <?=(in_array(strval($i), explode(",", $cronFields["day_of_week"])) ? ' selected="selected"' : '')?>><?=$L_WEEK_DAYS[$i]?></option>
 			    <? } ?>
 			</select>
 			&nbsp;&nbsp;
-			<label>Mese</label>
+			<label><?=$L_SCHED_MONTH?></label>
 			<select name="cronFields[month][]" multiple="true">
-			    <option value="*" <?=(in_array("*", explode(",", $cronFields["month"])) ? ' selected="selected"' : '')?>>Ogni mese</option>
+			    <option value="*" <?=(in_array("*", explode(",", $cronFields["month"])) ? ' selected="selected"' : '')?>><?=$L_SCHED_EVERY_MONTH?></option>
 			    <? for ($i = 0; $i < 12; $i++) { ?>
-				<option value="<?=$i?>" <?=(in_array(strval($i), explode(",", $cronFields["month"])) ? ' selected="selected"' : '')?>><?=$mesi[$i]?></option>
+				<option value="<?=$i?>" <?=(in_array(strval($i), explode(",", $cronFields["month"])) ? ' selected="selected"' : '')?>><?=$L_MONTHS[$i]?></option>
 			    <? } ?>
 			</select>
 			&nbsp;&nbsp;
-			<label>Anno</label>
+			<label><?=$L_SCHED_YEAR?></label>
 			<select name="cronFields[year][]" multiple="true">
-			    <option value="*" <?=(in_array("*", explode(",", $cronFields["year"])) ? ' selected="selected"' : '')?>>Ogni anno</option>
+			    <option value="*" <?=(in_array("*", explode(",", $cronFields["year"])) ? ' selected="selected"' : '')?>><?=$L_SCHED_EVERY_YEAR?></option>
 			    <? for ($i = 0; $i < 3; $i++) { 
 				$year = date('Y', strtotime('+'.$i.' years'));
 				?>
@@ -89,14 +87,14 @@ if(isset($_GET["deviceId"])) {
 			    <? } ?>
 			</select>
 			<br/><br/>
-			<label style="display=inherit">Azione</label>
+			<label style="display=inherit"><?=$L_SCHED_ACTION?></label>
 			<select name="action">
 			    <? if($type=="delaySwitch") {?>
-			    <option value="on" <?=($jobMap["action"] == "on" ? ' selected="selected"' : '')?>>Accendi</option>
-			    <option value="off" <?=($jobMap["action"] == "off" ? ' selected="selected"' : '')?>>Spegni</option>
+			    <option value="on" <?=($jobMap["action"] == "on" ? ' selected="selected"' : '')?>><?=$L_SCHED_ACTION_TURN_ON?></option>
+			    <option value="off" <?=($jobMap["action"] == "off" ? ' selected="selected"' : '')?>><?=$L_SCHED_ACTION_TURN_OFF?></option>
 			    <? } ?>
-			    <option value="toggle" <?=($jobMap["action"] == "toggle" ? ' selected="selected"' : '')?>>Inverti</option>
-			    <option value="disabled" <?=($jobMap["action"] == "disabled" ? ' selected="selected"' : '')?>>Timer Disattivato</option>
+			    <option value="toggle" <?=($jobMap["action"] == "toggle" ? ' selected="selected"' : '')?>><?=$L_SCHED_ACTION_TOGGLE?></option>
+			    <option value="disabled" <?=($jobMap["action"] == "disabled" ? ' selected="selected"' : '')?>><?=$L_SCHED_ACTION_TIMER_DISABLED?></option>
 			</select>
 		      </fieldset>
 		    </form>

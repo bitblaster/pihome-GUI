@@ -8,6 +8,17 @@
  * 
  *
 */
+include("configs/lang_en.php");
+
+session_start();
+
+if (isset($_GET["lang"])) {
+	$_SESSION["lang"] = $_GET["lang"];
+}
+
+if (isset($_SESSION["lang"])) {
+	include("configs/lang_".$_SESSION["lang"].".php");
+}
 
 function get_db_table($data) {
 	global $config;
