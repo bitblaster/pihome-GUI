@@ -1,11 +1,12 @@
 <?
-include("configs/functions.inc.php");
+require_once(dirname(__FILE__)."/configs/functions.inc.php");
 		
 if(isset($_GET["deviceId"])) {
     $deviceId = $_GET["deviceId"];
     $type = $_GET["type"];
     
-    $result = file_get_contents("http://localhost:8444/".encrypt("readJobs/".$deviceId));
+    //$result = file_get_contents("http://localhost:8444/".encrypt("readJobs/".$deviceId));
+    $result = callServer("readJobs/".$deviceId);
     $jobs = array();
     if($result) {
 	$jobs = explode("|", $result);
@@ -100,14 +101,14 @@ if(isset($_GET["deviceId"])) {
 		    </form>
 		</td>
 		<td>
-		    <span style="display:block; text-align: center; "><a href="#" onclick="removeJob('<?=$jobId?>', '<?=$deviceId;?>', '<?=$type;?>');"><button class="button-off pure-button" data-role="none">&nbsp;-&nbsp;</button></a></span>
+		    <span style="display:block; text-align: center; "><a href="#" onclick="removeJob('<?=$jobId?>', '<?=$deviceId;?>', '<?=$type;?>');"><button class="button-add-remove button-off pure-button" data-role="none">&nbsp;&minus;&nbsp;</button></a></span>
 		    <span style="display:block; text-align: center; padding:5px"><a href="#" onclick="saveJob('<?=$jobId?>', '<?=$deviceId;?>', '<?=$type;?>');"><button class="button-img pure-button" data-role="none"><img class="buttonImg" src="images/save.svg" /></button></a></span>
 		</td>
 	    </tr>
 <? } ?>	    
 	    <tr>
 		<td colspan="2" style="padding:10px">
-		    <span ><a href="#" onclick="addJob('<?=$deviceId;?>', '<?=$type;?>');"><button class="button-on pure-button" data-role="none">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</button></a></span>
+		    <span ><a href="#" onclick="addJob('<?=$deviceId;?>', '<?=$type;?>');"><button class="button-on pure-button" data-role="none">&nbsp;&nbsp;&nbsp;&nbsp;&plus;&nbsp;&nbsp;&nbsp;&nbsp;</button></a></span>
 		</td>
 	    </tr>
 	</table>

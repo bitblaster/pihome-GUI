@@ -1,209 +1,149 @@
 
-function request(url, method, data, callback) {
-	var xmlHttp = new XMLHttpRequest;
-	if (!xmlHttp)
-		return false;
-	var _data;
-	if (data != null && typeof data == "object") {
-		_data = [];
-		for (var i in data)
-			_data.push(i + "=" + data[i]);
-		_data = _data.join("&");
-	} else {
-		_data = data;
-	}
-	method = method.toUpperCase();
-	//alert(url);
-	if (method == "POST") {
-		xmlHttp.open(method, url, true);
-		xmlHttp.setRequestHeader("Method", "POST "+url+" HTTP/1.1");
-		xmlHttp.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
-	} else {
-		if (_data)
-			url += (url.indexOf("?") == -1 ? (_data.charAt(0) == "?" ? "" : "?") : "&") + _data;
-		_data = "";
-		//alert(url);
-		xmlHttp.open(method, url, true);
-	}
-	if (callback) {
-		xmlHttp.onreadystatechange = function() {
-			if (xmlHttp.readyState == 4) {
-				xmlHttp.onreadystatechange = function(){};
-				
-				if(xmlHttp.status!=200) {
-					$('.toast').text("Errore durante la chiamata al server: " + xmlHttp.responseText).fadeIn(400).delay(3000).fadeOut(400); 
-				}
-				else {
-					$('.toast').text("Comando eseguito correttamente").fadeIn(400).delay(3000).fadeOut(400); 
-					callback(xmlHttp, data);
-				}
-			}
-		};
-	}
-	xmlHttp.send(_data);
-	return xmlHttp;
-}
-	
-function toggle_add_device(){
-	var img_device = document.getElementById("add_image_device");
-	if(img_device.name=="0"){
-		$("#add_device").slideToggle("fast"); 
-		img_device.name = "1";
-		img_device.src = "images/add_off.png";				
-	}else if(img_device.name=="1"){
-		$("#add_device").slideToggle("fast"); 
-		img_device.name = "0";
-		img_device.src = "images/add.png";				
-	}		
+var bPopup=null;
+
+function enableDevice(id){
+	var quest = "?w=device&o=enabled&id=" + id;
+	request('request.php', 'GET', quest, function() { 
+        
+        var imgUrl = $('#deviceEnabledImg_'+id).attr("src");
+        
+        if(imgUrl.indexOf("enabled") > 0)
+            $('#deviceEnabledImg_'+id).attr("src", imgUrl.replace("enabled", "disabled"));
+        else
+            $('#deviceEnabledImg_'+id).attr("src", imgUrl.replace("disabled", "enabled"));
+    } );
 }
 
+function addDevice(groupId){
+    bPopup = $('#popup').bPopup({
+        contentContainer:'.content',
+        loadUrl: 'editDevice.php?w=-1&g=' + groupId,
+        onClose: function(){ bPopup=null }
+    });
+}
 
-function toggle_add_rooms(){
-	var img_device = document.getElementById("add_image_room");
-	if(img_device.name=="0"){
-		$("#add_room").slideToggle("fast"); 		
-		img_device.name = "1";
-		img_device.src = "images/add_off.png";				
-	}else if(img_device.name=="1"){
-		$("#add_room").slideToggle("fast"); 
-		img_device.name = "0";
-		img_device.src = "images/add.png";				
+function editDevice(deviceId, groupId) {	
+    bPopup = $('#popup').bPopup({
+        contentContainer:'.content',
+        loadUrl: 'editDevice.php?w=' + deviceId + '&g=' + groupId,
+        onClose: function(){ bPopup=null }
+    });
+}
+
+function editDeviceSend(deviceId, groupId) {
+	var deviceName = $("#formDevice_"+deviceId+" > input[name='device_name']").val();
+    var flagString = "";
+    $("#formDevice_"+deviceId+" > .flags > input[name='flags']:checked").each(function(i){
+        flagString += $(this).val();
+    });
+	var ioPort = $("#formDevice_"+deviceId+" > select[name='code']").val();
+	var type = $("#formDevice_"+deviceId+" > select[name='type']").val();
+	var status = $("#formDevice_"+deviceId+" > select[name='status']").val();
+	//var device_sort = document.getElementsByName("sort")[0].value;
+	var device_sort	 = "0";
+	var params = "?id=" + deviceId + "&w=device&o=" + (deviceId < 0 ? "insert" : "update") /*&enabled=" + device_enabled*/ + "&device_name=" + deviceName + "&groupId=" + groupId + "&flags=" + flagString + "&code=" + ioPort + "&type=" + type/* + "&status=" + status + "&sort=" + device_sort*/;
+
+	if(deviceName!=""){
+		request('request.php', 'GET', params, function(){ 
+            if(deviceId < 0) {
+                $('#groupDevices_' + groupId + '_content').load('devices.php?group=' + groupId);
+            }
+            else {
+                $("#deviceName_" + deviceId).text(deviceName);
+                $("#deviceCode_" + deviceId).text(flagString+ioPort);
+                $("#deviceLocalSwitch_" + deviceId).text(status=="-1" ? "Sì" : "No");
+            }
+
+            if(bPopup != null) {
+                bPopup.close();
+                bPopup=null;
+            }
+		});
 	}
 }
 
-
-function del_device(wid){
+function deleteDevice(deviceId, groupId){
 	if(confirm('Delete Device?')){
-		var quest = "?w=device&o=delete&wid=" + wid;
-		request('request.php', 'GET', quest, function(){ $('#lights').load('lights.php'); } );
+		var quest = "?w=device&o=delete&id=" + deviceId;
+		request('request.php', 'GET', quest, function() { 
+            $('#groupDevices_' + groupId + '_content').load('devices.php?group=' + groupId);
+        });
 	}
 }
 
+function addGroup(){
+    bPopup = $('#popup').bPopup({
+        contentContainer:'.content',
+        loadUrl: 'editGroup.php?w=-1',
+        onClose: function(){ bPopup=null }
+    });
+}
 
-function del_room(wid){
-	if(confirm('Delete Room?')){
-		var quest = "?w=room&o=delete&wid=" + wid;
-		request('request.php', 'GET', quest, function(){ $('#homerooms').load('rooms.php'); } );
+function editGroup(groupId) {	
+    bPopup = $('#popup').bPopup({
+        contentContainer:'.content',
+        loadUrl: 'editGroup.php?w=' + groupId,
+        onClose: function(){ bPopup=null }
+    });
+}
+
+function editGroupSend(groupId) {
+    var groupName = $("#formGroup_"+groupId+" > input[name='groupName']").val();
+    
+	var params = "?id=" + groupId + "&w=group&o=" + (groupId < 0 ? "insert" : "update") + "&group_name=" + groupName;
+	if(groupName!=""){
+		request('request.php', 'GET', params, function(){ 
+            if(groupId < 0) {
+                $('#groups').load('groups.php');
+            }
+            else {
+                $("#groupName_" + groupId).text(groupName);
+            }
+            
+            if(bPopup != null) {
+                bPopup.close();
+                bPopup=null;
+            }
+        });
 	}
 }
 
-
-function enable_device(wid){
-	var quest = "?w=device&o=enabled&wid=" + wid;
-	request('request.php', 'GET', quest, function(){ $('#lights').load('lights.php'); } );
-}
-
-function add_device(){
-	var device_enabled = document.getElementsByName("enabled")[0].value;
-	var device_name  = document.getElementsByName("device_name")[0].value;
-	var room_id      = document.getElementsByName("room_id")[0].value;
-	var flags        = document.getElementsByName("flags");
-	var flagString   = "";
-	for(var i=0; i < flags.length; i++) {
-		if(flags[i].checked)
-			flagString += flags[i].value;
-	}
-	var ioPort  	 = document.getElementsByName("code")[0].value;
-	var type 		 = document.getElementsByName("type")[0].value;
-	var status 		 = document.getElementsByName("status")[0].value;
-	var device_sort	 = document.getElementsByName("sort")[0].value;				
-	var params = "?w=device&o=insert&enabled=" + device_enabled + "&device_name=" + device_name + "&room=" + room_id + "&flags=" + flagString + "&code=" + ioPort + "&type=" + type + "&status=" + status + "&sort=" + device_sort;
-	if(device_name!=""){
-		request('request.php', 'GET', params, function(){ window.location.reload(); } );
+function deleteGroup(groupId){
+	if(confirm('Delete group?')){
+		var quest = "?w=group&o=delete&id=" + groupId;
+		request('request.php', 'GET', quest, function(){ 
+            $('#groups').load('groups.php');
+        } );
 	}
 }
 
-function add_room(){
-	var room_name   = document.getElementsByName("room")[0].value;
-	var params 		= "?w=room&o=insert&room_name=" + room_name;
-	if(room_name!=""){
-		request('request.php', 'GET', params, function(){ window.location.reload(); } );
-	}
+function setPlaceholder(event, ui) {
+    //ui.placeholder.html("<td colspan='3' class='sortablePlaceholder'></td>");
+    //ui.placeholder.html("<td colspan='3' style='height: 20px; width: 80px; border: 2px dashed #fcefa1; background-color: #fbfbf2'></td>");
 }
+    
+function saveReorder(groupId, ui) {
+    // if we dragged the item between a row and its (hidden) edit block, push up the edit block
+    if(ui.item.next().attr("id") != null && ui.item.next().attr("id").startsWith("deviceEdit_"))
+        ui.item.next().insertBefore(ui.item)
 
-function update_device(id){		
-	document.getElementById('work_device').style.display = "block";			
-	document.getElementById('add_device_btn').style.display = "none";
-	document.getElementById('work_device_btn').style.display = "block";
-	document.getElementById('add_device').style.display = "none";
-	$('#work_device').load('work.php?w=' + id + '&o=device');				
+    // Reposition the item's edit block after it
+    var deviceId = getEditBlockDeviceId($(".device", ui.item));
+    $("#deviceEdit_"+deviceId, ui.item.parent()).insertAfter(ui.item);
+    
+    // Compose a string with the new order
+    var deviceOrder=[];
+    $(".device", ui.item.parent()).each(function (i) {
+        deviceOrder.push(getEditBlockDeviceId($(this)));
+    });
+    
+    // Call the server to update the items order
+    var params = "?w=device&o=reorder&groupId=" + groupId + "&order=" + deviceOrder.join(",");
+    alert(params);
+	request('request.php', 'GET', params, function(){ } );
+};
+
+function getEditBlockDeviceId(device) {
+    var deviceId = device.attr("id");
+    return deviceId.substring(deviceId.indexOf("_")+1);
 }
-
-function update_device_send(id){
-	document.getElementById('work_device').style.display = "none";
-	document.getElementById('work_device_btn').style.display = "none";
-	document.getElementById('add_device_btn').style.display = "block";
-	document.getElementById('add_device').style.display = "none";
-	var img_device = document.getElementById("add_image_device");
-	img_device.name = "0";
-	img_device.src = "images/add.png";		
-	var device_enabled = document.getElementsByName("wenabled")[0].value;
-	var device_name  = document.getElementsByName("wdevice_name")[0].value;
-	var room_id      = document.getElementsByName("wroom_id")[0].value;
-	var flags        = document.getElementsByName("wflags");
-	var flagString   = "";
-	for(var i=0; i < flags.length; i++) {
-		if(flags[i].checked)
-			flagString += flags[i].value;
-	}
-	var ioPort 		 = document.getElementsByName("wcode")[0].value;
-	var type 		 = document.getElementsByName("wtype")[0].value;
-	var status 		 = document.getElementsByName("wstatus")[0].value;
-	var device_sort	 = document.getElementsByName("wsort")[0].value;				
-	var params = "?wid=" + id + "&w=device&o=update&enabled=" + device_enabled + "&device_name=" + device_name + "&room=" + room_id + "&flags=" + flagString + "&code=" + ioPort + "&type=" + type + "&status=" + status + "&sort=" + device_sort;
-
-	if(device_name!=""){
-		request('request.php', 'GET', params, function(){ window.location.reload(); } );
-	}
-}
-
-function close_work_device(){
-	document.getElementById('work_device').style.display = "none";
-	document.getElementById('work_device_btn').style.display = "none";
-	document.getElementById('add_device_btn').style.display = "block";		
-	document.getElementById('add_device').style.display = "none";
-	var img_device = document.getElementById("add_image_device");
-	img_device.name = "0";
-	img_device.src = "images/add.png";
-}
-
-
-
-
-
-
-
-function update_room(id){
-	document.getElementById('work_room').style.display = "block";			
-	document.getElementById('add_room_btn').style.display = "none";
-	document.getElementById('work_room_btn').style.display = "block";
-	document.getElementById('add_room').style.display = "none";
-	$('#work_room').load('work.php?w=' + id + '&o=room');	
-}
-
-function update_room_send(id){
-	document.getElementById('work_room').style.display = "none";
-	document.getElementById('work_room_btn').style.display = "none";
-	document.getElementById('add_room_btn').style.display = "block";
-	document.getElementById('add_room').style.display = "none";
-	var img_room = document.getElementById("add_image_room");
-	img_room.name = "0";
-	img_room.src = "images/add.png";
-	var room_name = document.getElementsByName("wroom")[0].value;
-	var params = "?wid=" + id + "&w=room&o=update&room_name=" + room_name;
-	if(room_name!=""){
-		request('request.php', 'GET', params, function(){ window.location.reload(); } );
-	}
-}
-
-function close_work_room(){
-	document.getElementById('work_room').style.display = "none";
-	document.getElementById('work_room_btn').style.display = "none";
-	document.getElementById('add_room_btn').style.display = "block";		
-	document.getElementById('add_room').style.display = "none";
-	var img_room = document.getElementById("add_image_room");
-	img_room.name = "0";
-	img_room.src = "images/add.png";
-}
-	
-	

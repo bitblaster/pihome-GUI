@@ -8,7 +8,7 @@
  * 
  *
 */
-include("configs/lang_en.php");
+require_once(dirname(__FILE__)."/lang_en.php");
 
 session_start();
 
@@ -17,7 +17,7 @@ if (isset($_GET["lang"])) {
 }
 
 if (isset($_SESSION["lang"])) {
-	include("configs/lang_".$_SESSION["lang"].".php");
+	require_once(dirname(__FILE__)."/lang_".$_SESSION["lang"].".php");
 }
 
 function get_db_table($data) {
@@ -52,14 +52,14 @@ function getcopy() {
 	return '<a href="http://" target="_blank" title="PiHome">PiHome</a> &#169; '.date('Y');
 }
 
-function getActiveLights() {
+function getActiveDevices($groupId) {
 	dbconnect();
-	$sql_getLights       = "SELECT * FROM  pi_devices  WHERE enabled = '1' ORDER BY sort DESC ";
+	$sql_getLights       = "SELECT * FROM  pi_devices WHERE group_id=".$groupId." AND enabled = '1' ORDER BY sort";
 	$query_getLights     = mysql_query($sql_getLights);	
 	$x=0;
 	while($light = mysql_fetch_assoc($query_getLights)){
 		$devices[$x]["id"] = $light['id'];
-		$devices[$x]["room_id"] = $light['room_id'];
+		$devices[$x]["group_id"] = $light['group_id'];
 		$devices[$x]["device"] = $light['device'];
 		$devices[$x]["flags"] = $light['flags'];
 		$devices[$x]["code"] = $light['code'];
@@ -70,12 +70,12 @@ function getActiveLights() {
 	return $devices;
 }
 
-function getRoomById($id) {
+function getGroupById($id) {
 	dbconnect();
-	$sql_getroom       = "SELECT * FROM  pi_rooms  WHERE id = '".$id."' ";
-	$query_getroom      = mysql_query($sql_getroom);
-	while($getroom = mysql_fetch_assoc($query_getroom)){
-		return $getroom['room'];
+	$sql_getgroup       = "SELECT * FROM  pi_groups  WHERE id = '".$id."' ";
+	$query_getgroup      = mysql_query($sql_getgroup);
+	while($getgroup = mysql_fetch_assoc($query_getgroup)){
+		return $getgroup['group_name'];
 	}
 }
 
@@ -113,6 +113,19 @@ function getCodeById($id) {
 	return $c;
 }
 
+function getGroups() {
+    dbconnect();
+    $sql_getGroups       = "SELECT * FROM  pi_groups";
+    $query_getGroups     = mysql_query($sql_getGroups);	
+    $x=0;
+    while($group = mysql_fetch_assoc($query_getGroups)) {
+        $groups[$x]["id"] = $group['id'];
+        $groups[$x]["group"] = $group['group_name'];
+        $x=$x+1;
+    }
+    return $groups;
+}
+
 function allOff() {
 	dbconnect();
 	$sql_alloff = "SELECT * FROM pi_devices WHERE status = 1 ";
@@ -143,6 +156,32 @@ function encrypt($text) {
 	$iv = '43093287';
 	$passphrase = 'daFj7mGJHo956SIg';
 	return base64_encode(mcrypt_encrypt(MCRYPT_BLOWFISH, $passphrase, $text, MCRYPT_MODE_CBC, $iv));
+}
+
+function callPiServer($requestString) {
+	//$result = file_get_contents("http://localhost:10444/".encrypt($requestString));
+    if(strpos($requestString, "?")>0)
+        $requestString = $requestString."&time=".strval(time());
+    else
+        $requestString = $requestString."?time=".strval(time());
+        
+    $result = file_get_contents("http://localhost:8444/".encrypt($requestString));
+
+	if($result == false) {		
+		if(isset($http_response_header)) {
+			list($version,$status_code,$msg) = explode(' ',$http_response_header[0], 3);
+	
+			//error_log("PiHome server response: ".$http_response_header[0]."---".$status_code.", ".$msg);
+			http_response_code($status_code);
+			echo $msg;
+		}
+		else {
+			http_response_code(500);
+			echo "Server PiHome non raggiungibile";
+		}
+	}
+	
+	return $result;
 }
 
 $useragent=$_SERVER['HTTP_USER_AGENT'];

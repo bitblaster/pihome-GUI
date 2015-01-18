@@ -11,8 +11,8 @@
  *
 */
 
-include("configs/dbconfig.inc.php");
-include("configs/functions.inc.php");
+require_once(dirname(__FILE__)."/configs/dbconfig.inc.php");
+require_once(dirname(__FILE__)."/configs/functions.inc.php");
 
 alloff();
 ?>

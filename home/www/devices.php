@@ -1,10 +1,14 @@
-
-<table>
 <?
-$lp=getActiveDevices();
+require_once(dirname(__FILE__)."/configs/dbconfig.inc.php");
+require_once(dirname(__FILE__)."/configs/functions.inc.php");
 
+$groupId=$_GET["group"];
+$lp=getActiveDevices($groupId);
+?>
+<table id="devices_<?=$groupId?>" class="devices">
+
+<?
 for($i=0;$i<count($lp);$i++){
-
     if($lp[$i]["status"]=="0") {
     $lampimg = "lamp_off.svg";
     }
@@ -16,12 +20,12 @@ for($i=0;$i<count($lp);$i++){
     }
     
 ?>    
-    <tr class="separator">
+    <tr <?= $i>0 ? 'class="separator"' : ''?>>
         <td class="lamp"><img class="lampImg" src="images/<?=$lampimg;?>" id="lampImg_<?=$lp[$i]["id"];?>" ></td>
         <td class="deviceName">
             <div class="device"><?=utf8_encode($lp[$i]["device"]);?></div>
             <div class="group">
-                <div class="nowrap"><?=$L_GROUP.": <strong>".utf8_encode(getGroupById($lp[$i]["group_id"]))."</strong>&nbsp;";?></div>
+                <!--<div class="nowrap"><?=$L_GROUP.": <strong>".utf8_encode(getGroupById($lp[$i]["group_id"]))."</strong>&nbsp;";?></div>-->
                 <div class="nowrap"><?=$L_CODE.": <strong>".$lp[$i]["flags"].$lp[$i]["code"]."</strong>&nbsp;";?></div>
                 <div class="nowrap"><?=$L_LOCAL_SWITCH.": <strong>".($lp[$i]["status"] == "-1" ? $L_YES : $L_NO)."</strong>&nbsp;";?></div>
             </div>
@@ -45,5 +49,15 @@ for($i=0;$i<count($lp);$i++){
     <? } ?>
 <?
 }
-?>    
+
+if($i==0) {
+?>
+    <tr>
+        <td class="deviceName" colspan="3">
+            <div class="device"><i>Nessun dispositivo presente</i></div>
+        </td>
+    </tr>
+<?
+}
+?>
 </table>

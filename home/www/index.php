@@ -10,10 +10,10 @@
  * visit: http://creativecommons.org/licenses/by-nc-sa/3.0/.
  *
 */
-
 include("configs/dbconfig.inc.php");
 include("configs/functions.inc.php");
 
+$adminArea=0;
 ?>
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
 <html>
@@ -33,33 +33,42 @@ include("configs/functions.inc.php");
 	<? } ?>
 	<script type="text/javascript" src="js/jquery.serialize-object.min.js"></script>
 	<script type="text/javascript" src="js/request.js" ></script>
+    <script type="text/javascript" src="js/common.js"></script>
 	<title>PiHome</title>
-	<script type="text/javascript">
-	 /*$(document).ready(function() {	 	
-	    $('#lights').load('lights.php');
-	 });*/	 
-	</script>
 </head>
 <body>
 
-<div id="nav">
-	<div><img src="images/pihome.svg" id="home" border="0"></div><a href="javascript:alloff()"><div class="separator"><img src="images/off.svg" border="0"></div><div><?=$L_ALL_OFF?></div></a><a href="javascript:refresh()"><div class="separator"><img src="images/refresh.svg" border="0" /></div><div><?=$L_REFRESH?></div></a>
-</div>
-
-
-<div id="page">
-	<div id="lights">
-		<? include("lights.php"); ?>
+<div id="nav" class="nav">
+	<div>
+		<img src="images/pihome.svg" id="home" border="0">
 	</div>
+	<div class="separator"><span style="border-left: 1px solid #565656; height: 3em"></span></div>
+    <a href="javascript:alloff()">
+        <div><img src="images/off.svg" border="0"></div>
+        <div><?=$L_ALL_OFF?></div>
+    </a>
+	<div class="separator"><span style="border-left: 1px solid #565656; height: 3em"></span></div>
+    <a href="javascript:refresh()">
+        <div><img src="images/refresh.svg" border="0" /></div>
+        <div><?=$L_REFRESH?></div>
+    </a>
 </div>
 
 
-<div id="settings">
-	<a href="admin/"><div><img src="images/settings.svg" border="0" /></div><div><?=$L_SETTINGS?></div></a>
+<!--<div id="devices">
+	<? include(dirname(__FILE__)."/lights.php"); ?>
+</div>-->
+
+<div id="groups">
+    <? include(dirname(__FILE__)."/groups.php"); ?>
 </div>
 
-
-
+<a href="admin/">
+    <div id="settings">
+        <div><img src="images/settings.svg" border="0" /></div>
+        <div><?=$L_SETTINGS?></div>
+    </div>
+</a>
 
 <div class='toast' style='display:none'></div>
 

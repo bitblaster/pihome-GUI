@@ -145,7 +145,6 @@ border-bottom:1px solid #d3d3d3;
 }
 
 .tabcontent{
-display:none;
 margin: auto;
 margin-top: 6.8px;
 width: 100%;
@@ -155,17 +154,9 @@ border-left: 1px solid #d3d3d3;
 border-right: 1px solid #d3d3d3;
 background-color: #ffffff;
 
--moz-border-top-right-radius: 10px;
--webkit-border-top-right-radius: 10px;		
-border-top-right-radius: 10px;
-
--moz-border-bottom-left-radius: 10px;
--webkit-border-bottom-left-radius: 10px;
-border-bottom-left-radius: 10px;
-
--moz-border-bottom-right-radius: 10px;
--webkit-border-bottom-right-radius: 10px;		
-border-bottom-right-radius: 10px;
+-moz-border-radius: 10px;
+-webkit-border-radius: 10px;		
+border-radius: 10px;
 }
 
 @media print {
@@ -466,4 +457,9 @@ a:visited {  color: #565656; text-decoration: none}
     -webkit-box-shadow: 0px 0px 24px -1px rgba(56, 56, 56, 1);
     -moz-box-shadow: 0px 0px 24px -1px rgba(56, 56, 56, 1);
     box-shadow: 0px 0px 24px -1px rgba(56, 56, 56, 1);
+}
+
+.sortablePlaceholder {
+  height: 60px;
+  border: 2px solid red;
 }

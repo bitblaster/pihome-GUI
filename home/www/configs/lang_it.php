@@ -2,8 +2,9 @@
 
 $L_ALL_OFF="SPEGNI TUTTO";
 $L_REFRESH="AGGIORNA";
+$L_LOGOUT="ESCI";
 $L_SETTINGS="IMPOSTAZIONI";
-$L_ROOM="Stanza";
+$L_GROUP="Zona";
 $L_FLAGS="Flags";
 $L_CODE="Codice";
 $L_LOCAL_SWITCH="Interruttore locale";
@@ -29,6 +30,11 @@ $L_SCHED_EVERY_HOUR="Ogni ora";
 $L_SCHED_EVERY_DAY="Ogni giorno";
 $L_SCHED_EVERY_MONTH="Ogni mese";
 $L_SCHED_EVERY_YEAR="Ogni anno";
+
+// Admin specific
+$L_ADD_GROUP="Nuovo Gruppo";
+$L_ADD_DEVICE="Nuovo Disp.";
+$L_BACK_PIHOME="Back to PiHome";
 
 $L_MONTHS = array('Gennaio', 'Febbraio', 'Marzo', 'Aprile', 'Maggio', 'Giugno', 'Luglio', 'Agosto', 'Settembre', 'Ottobre', 'Novembre','Dicembre');
 $L_WEEK_DAYS = array('Lunedì','Martedì','Mercoledì','Giovedì','Venerdì','Sabato','Domenica');

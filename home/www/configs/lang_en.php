@@ -2,8 +2,9 @@
 
 $L_ALL_OFF="ALL OFF";
 $L_REFRESH="REFRESH";
+$L_LOGOUT="LOGOUT";
 $L_SETTINGS="SETTINGS";
-$L_ROOM="Room";
+$L_GROUP="Group";
 $L_FLAGS="Flags";
 $L_CODE="Code";
 $L_LOCAL_SWITCH="Local switch";
@@ -29,6 +30,11 @@ $L_SCHED_EVERY_HOUR="Every hour";
 $L_SCHED_EVERY_DAY="Every day";
 $L_SCHED_EVERY_MONTH="Every month";
 $L_SCHED_EVERY_YEAR="Every year";
+
+// Admin specific
+$L_ADD_GROUP="Add Group";
+$L_ADD_DEVICE="Add Device";
+$L_BACK_PIHOME="Back to PiHome";
 
 $L_MONTHS = array('January', 'February', 'March', 'April', 'May', 'June', 'July ', 'August', 'September', 'October', 'November', 'December');
 $L_WEEK_DAYS = array('Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday');
