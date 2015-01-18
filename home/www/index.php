@@ -27,7 +27,7 @@ include("configs/functions.inc.php");
 	<link rel="stylesheet" href="css/pure-min.css" type="text/css" />
 	<link rel="stylesheet" href="css/style.css" type="text/css" />
 	<script type="text/javascript" src="js/jquery-1.11.1.min.js" ></script>
-	<? if($mobileClient) { ?>
+	<? if(0 && $mobileClient) { // JQuery mobile disabled at the moment ?>
 	<link rel="stylesheet" href="css/jquery.mobile-1.4.5.min.css" type="text/css" />
 	<script type="text/javascript" src="js/jquery.mobile-1.4.5.min.js" ></script>
 	<? } ?>
