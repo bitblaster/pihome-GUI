@@ -89,40 +89,6 @@ function getGroupById($id) {
 	}
 }
 
-function setLightStatus($id,$status) {
-	dbconnect();
-	$sql_light       = "SELECT * FROM  pi_devices  WHERE id = '".$id."' ";
-	$query_light      = mysql_query($sql_light);
-	while($light  = mysql_fetch_assoc($query_light)){
-		$ls = $light['status'];
-	}
-	if($status=="on") {
-		$s="1";
-	}
-	elseif($status=="off") {
-		$s="0";
-	}
-	elseif($status=="toggle") { 
-		$s=!$ls; 
-	}	
-	if($s!=$ls){	
-		dbconnect();
-		$sql_status_update = "UPDATE `pi_devices` SET `status`='".$s."' WHERE `id`='".$id."'";
-		mysql_query($sql_status_update);
-	}
-}
-
-function getCodeById($id) {
-	dbconnect();
-	$sql_getcode       = "SELECT * FROM  pi_devices  WHERE id = '".$id."' ";
-	$query_getcode      = mysql_query($sql_getcode);
-	while($code  = mysql_fetch_assoc($query_getcode)){
-		$c["flags"] = $code['flags'];
-		$c["code"] = $code['code'];
-	}
-	return $c;
-}
-
 function getGroups() {
     dbconnect();
     $sql_getGroups       = "SELECT * FROM  pi_groups";
@@ -146,11 +112,6 @@ function allOff() {
 		setLightStatus($getallon["id"],$stat);
 		file_get_contents("http://localhost:8550/request/".$getallon['flags']."/".$stat."/".$getallon['code']);
 	}
-}
-
-function startsWith($haystack, $needle) {
-     $length = strlen($needle);
-     return (substr($haystack, 0, $length) === $needle);
 }
 
 function endsWith($haystack, $needle) {

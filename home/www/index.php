@@ -42,24 +42,25 @@ $adminArea=0;
 		<img src="images/pihome.svg" id="home" border="0">
 	</div>
 	<div class="separator"><span style="border-left: 1px solid #565656; height: 3em"></span></div>
-    <a href="javascript:alloff()">
+    <a href="javascript:allOff()">
         <div><img src="images/off.svg" border="0"></div>
         <div><?=$L_ALL_OFF?></div>
     </a>
 	<div class="separator"><span style="border-left: 1px solid #565656; height: 3em"></span></div>
+    <!--
     <a href="javascript:refresh()">
         <div><img src="images/refresh.svg" border="0" /></div>
         <div><?=$L_REFRESH?></div>
     </a>
 	<div class="separator"><span style="border-left: 1px solid #565656; height: 3em"></span></div>
-    
+    -->
 <?
     require_once("configs/language.inc.php");
 ?>    
 </div>
 
 <!--<div id="devices">
-	<? //include(dirname(__FILE__)."/lights.php"); ?>
+	<? //include(dirname(__FILE__)."/devices.php"); ?>
 </div>-->
 
 <div id="groups">

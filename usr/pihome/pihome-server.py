@@ -145,6 +145,9 @@ class Handler(BaseHTTPRequestHandler):
                     executeManualCommand(device["id"], action)
                 else:
                     raise Exception, "No device found matching '" + split[1] + "'"
+            elif split[0] == "allOff":
+                logging.info("Executing allOff")
+                executeManualCommand("all", "off")
             elif split[0] == "reloadDevices":
                 logging.info("Executing reloadDevices")
                 loadDevices()
@@ -230,6 +233,12 @@ def executeManualCommand(deviceId, action):
     #executeCommand(deviceId, action, False)
 
 def executeCommand(deviceId, action, scheduled):
+    # Commands spanning all devices are executed passing deviceId="all"
+    if deviceId == "all":
+        for id in devicesById.keys():
+            executeCommand(id, action, scheduled)
+        return
+        
     device = devicesById[deviceId]
     flags = device["flags"]
     code = device["code"]

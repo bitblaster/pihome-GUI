@@ -2,15 +2,20 @@
 function switchDevice(deviceId, action){
 	var lampImgId = "lampImg_" + deviceId;
 	
-	// TODO: jquerizzare le function
 	if(action == "off") {  
-		request('request.php', 'GET', {"switchDevice": deviceId, "action": action}, function(){ document.getElementById(lampImgId).src="images/lamp_off.svg"; } );
+		request('request.php', 'GET', {"switchDevice": deviceId, "action": action}, function() { 
+			$("#"+lampImgId).attr("src", "images/lamp_off.svg");
+		});
 	}
 	else if(action == "on") {  
-		request('request.php', 'GET', {"switchDevice": deviceId, "action": action}, function(){ document.getElementById(lampImgId).src="images/lamp_on.svg"; } );
+		request('request.php', 'GET', {"switchDevice": deviceId, "action": action}, function() { 
+			$("#"+lampImgId).attr("src", "images/lamp_on.svg");
+		});
 	}
 	else {
-		request('request.php', 'GET', {"switchDevice": deviceId, "action": action}, function(){ document.getElementById(lampImgId).src="images/lamp_unk.svg"; } );
+		request('request.php', 'GET', {"switchDevice": deviceId, "action": action}, function() { 
+			$("#"+lampImgId).attr("src", "images/lamp_unk.svg"); 
+		});
 	}
 }
 	
@@ -18,9 +23,11 @@ function refresh(){
  	$('#lights').load('lights.php');
 }	  
  
-function alloff(){
+function allOff(){
  	if(confirm('All Devices off?')){
-		request('alloff.php', 'GET', {s: ""}, function(){ $('#lights').load('lights.php'); } );
+		request('request.php', 'GET', {"allOff": "1"}, function() {
+			$(".lampImg").attr("src", "images/lamp_off.svg");
+		});
 	}
 }
 
@@ -38,11 +45,15 @@ function toggleSchedule(deviceId, type) {
 }	
 
 function addJob(deviceId, type) {
-	request('request.php', 'GET', {addJob: deviceId}, function(){ $('#sched_' + deviceId + '_content').load('sched.php?deviceId=' + deviceId + '&type=' + type);} );
+	request('request.php', 'GET', {addJob: deviceId}, function() {
+		$('#sched_' + deviceId + '_content').load('sched.php?deviceId=' + deviceId + '&type=' + type);
+	});
 }
 
 function removeJob(jobId, deviceId, type) {
-	request('request.php', 'GET', {removeJob: jobId}, function(){ $('#sched_' + deviceId + '_content').load('sched.php?deviceId=' + deviceId + '&type=' + type); } );
+	request('request.php', 'GET', {removeJob: jobId}, function() {
+		$('#sched_' + deviceId + '_content').load('sched.php?deviceId=' + deviceId + '&type=' + type);
+	});
 }
 
 function saveJob(jobId, deviceId) {
@@ -55,6 +66,6 @@ function saveJob(jobId, deviceId) {
 	}
 	else {
 		//alert(jsonString);
-		request('request.php', 'GET', {saveJob: jsonString}, function(){} );
+		request('request.php', 'GET', {saveJob: jsonString}, function() {});
 	}
 }

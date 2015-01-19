@@ -41,6 +41,9 @@ else if(isset($_GET["saveJob"])) {
 	$requestString = "saveJob/".$jsonString;
 	callPiServer($requestString);
 }
+else if(isset($_GET["allOff"])) {
+	callPiServer("allOff");
+}
 else {
 	http_response_code(500);
 	echo $L_MSG_ERROR_INVALID_DATA.": ".$_SERVER['QUERY_STRING'];
