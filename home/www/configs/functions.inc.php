@@ -172,6 +172,8 @@ function encrypt($text) {
 
 function callPiServer($requestString) {
 	global $config;
+	global $L_MSG_ERROR_PISERVER_UNREACHABLE;
+	
     if(strpos($requestString, "?")>0)
         $requestString = $requestString."&client=webInterface&time=".strval(time());
     else
