@@ -1,5 +1,4 @@
 <?
-require_once(dirname(__FILE__)."/configs/dbconfig.inc.php");
 require_once(dirname(__FILE__)."/configs/functions.inc.php");
 
 ?>
@@ -29,5 +28,5 @@ for($x=0;$x<count($rp);$x++) {
 </table>
 
 <? if($adminArea==1) { ?>
-<button class="button-on pure-button" style="margin: 10px" data-role="none" onclick="addGroup();"><?=$L_ADD_GROUP?></button>
+<button class="button-on pure-button" style="margin: 10px" data-role="none" onclick="addGroup();"><?=$L_EDIT_GROUP_ADD?></button>
 <? } ?>

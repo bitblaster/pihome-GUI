@@ -5,8 +5,7 @@ if(isset($_GET["deviceId"])) {
     $deviceId = $_GET["deviceId"];
     $type = $_GET["type"];
     
-    //$result = file_get_contents("http://localhost:8444/".encrypt("readJobs/".$deviceId));
-    $result = callServer("readJobs/".$deviceId);
+    $result = callPiServer("readJobs/".$deviceId);
     $jobs = array();
     if($result) {
 	$jobs = explode("|", $result);
@@ -66,7 +65,7 @@ if(isset($_GET["deviceId"])) {
 			<select name="cronFields[day_of_week][]" multiple="true">
 			    <option value="*" <?=(in_array("*", explode(",", $cronFields["day_of_week"])) ? ' selected="selected"' : '')?>><?=$L_SCHED_EVERY_DAY?></option>
 			    <? for ($i = 0; $i < 7; $i++) { ?>
-				<option value="<?=$i?>" <?=(in_array(strval($i), explode(",", $cronFields["day_of_week"])) ? ' selected="selected"' : '')?>><?=$L_WEEK_DAYS[$i]?></option>
+				<option value="<?=$i?>" <?=(in_array(strval($i), explode(",", $cronFields["day_of_week"])) ? ' selected="selected"' : '')?>><?=$L_SCHED_WEEK_DAYS[$i]?></option>
 			    <? } ?>
 			</select>
 			&nbsp;&nbsp;
@@ -74,7 +73,7 @@ if(isset($_GET["deviceId"])) {
 			<select name="cronFields[month][]" multiple="true">
 			    <option value="*" <?=(in_array("*", explode(",", $cronFields["month"])) ? ' selected="selected"' : '')?>><?=$L_SCHED_EVERY_MONTH?></option>
 			    <? for ($i = 0; $i < 12; $i++) { ?>
-				<option value="<?=$i?>" <?=(in_array(strval($i), explode(",", $cronFields["month"])) ? ' selected="selected"' : '')?>><?=$L_MONTHS[$i]?></option>
+				<option value="<?=$i?>" <?=(in_array(strval($i), explode(",", $cronFields["month"])) ? ' selected="selected"' : '')?>><?=$L_SCHED_MONTHS[$i]?></option>
 			    <? } ?>
 			</select>
 			&nbsp;&nbsp;

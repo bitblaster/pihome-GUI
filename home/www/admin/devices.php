@@ -31,7 +31,7 @@ for($i=0;$i<count($lp);$i++) {
 ?>    
 </table>
 
-<button class="button-on pure-button" style="margin: 10px" data-role="none" onclick="addDevice('<?=$groupId?>');"><?=$L_ADD_DEVICE?></button>
+<button class="button-on pure-button" style="margin: 10px" data-role="none" onclick="addDevice('<?=$groupId?>');"><?=$L_EDIT_DEVICE_ADD?></button>
 
 <script type="text/javascript">
 

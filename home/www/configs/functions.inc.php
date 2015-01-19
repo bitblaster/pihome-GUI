@@ -8,17 +8,27 @@
  * 
  *
 */
+
+require_once(dirname(__FILE__)."/piconfig.inc.php");
 require_once(dirname(__FILE__)."/lang_en.php");
 
 session_start();
 
 if (isset($_GET["lang"])) {
 	$_SESSION["lang"] = $_GET["lang"];
+	setcookie("lang", $_GET["lang"], time() + (86400 * 10000), "/"); 
 }
 
-if (isset($_SESSION["lang"])) {
-	require_once(dirname(__FILE__)."/lang_".$_SESSION["lang"].".php");
+if (!isset($_SESSION["lang"])) {
+	if(isset($_COOKIE["lang"])) {
+		$_SESSION["lang"] = $_COOKIE["lang"];
+	}
+	else {
+		$_SESSION["lang"] = "en";
+	}
 }
+
+require_once(dirname(__FILE__)."/lang_".$_SESSION["lang"].".php");
 
 function get_db_table($data) {
 	global $config;
@@ -153,19 +163,21 @@ function endsWith($haystack, $needle) {
 }
 
 function encrypt($text) {
-	$iv = '43093287';
-	$passphrase = 'daFj7mGJHo956SIg';
+	global $config;
+	$iv = $config['encrypt_iv'];
+	$passphrase = $config['encrypt_passphrase'];
+	error_log("iv: ".$iv.", pwd: ".$passphrase);
 	return base64_encode(mcrypt_encrypt(MCRYPT_BLOWFISH, $passphrase, $text, MCRYPT_MODE_CBC, $iv));
 }
 
 function callPiServer($requestString) {
-	//$result = file_get_contents("http://localhost:10444/".encrypt($requestString));
+	global $config;
     if(strpos($requestString, "?")>0)
-        $requestString = $requestString."&time=".strval(time());
+        $requestString = $requestString."&client=webInterface&time=".strval(time());
     else
-        $requestString = $requestString."?time=".strval(time());
+        $requestString = $requestString."?client=webInterface&time=".strval(time());
         
-    $result = file_get_contents("http://localhost:8444/".encrypt($requestString));
+    $result = file_get_contents($config['pi_server_url']."/".encrypt($requestString));
 
 	if($result == false) {		
 		if(isset($http_response_header)) {
@@ -177,7 +189,7 @@ function callPiServer($requestString) {
 		}
 		else {
 			http_response_code(500);
-			echo "Server PiHome non raggiungibile";
+			echo $L_MSG_ERROR_PISERVER_UNREACHABLE;
 		}
 	}
 	

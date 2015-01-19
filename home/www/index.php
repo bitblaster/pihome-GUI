@@ -10,14 +10,14 @@
  * visit: http://creativecommons.org/licenses/by-nc-sa/3.0/.
  *
 */
-include("configs/dbconfig.inc.php");
-include("configs/functions.inc.php");
+require_once("configs/functions.inc.php");
 
 $adminArea=0;
 ?>
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
 <html>
 <head>
+	<title><?=$L_TITLE?></title>
 	<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /> 
 	<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1" /> 
 	<meta name="viewport" content="width=device-width, user-scalable=no" /> 
@@ -34,7 +34,6 @@ $adminArea=0;
 	<script type="text/javascript" src="js/jquery.serialize-object.min.js"></script>
 	<script type="text/javascript" src="js/request.js" ></script>
     <script type="text/javascript" src="js/common.js"></script>
-	<title>PiHome</title>
 </head>
 <body>
 
@@ -52,11 +51,15 @@ $adminArea=0;
         <div><img src="images/refresh.svg" border="0" /></div>
         <div><?=$L_REFRESH?></div>
     </a>
+	<div class="separator"><span style="border-left: 1px solid #565656; height: 3em"></span></div>
+    
+<?
+    require_once("configs/language.inc.php");
+?>    
 </div>
 
-
 <!--<div id="devices">
-	<? include(dirname(__FILE__)."/lights.php"); ?>
+	<? //include(dirname(__FILE__)."/lights.php"); ?>
 </div>-->
 
 <div id="groups">
@@ -69,6 +72,8 @@ $adminArea=0;
         <div><?=$L_SETTINGS?></div>
     </div>
 </a>
+
+<div id="copy"><?=getcopy();?></div>
 
 <div class='toast' style='display:none'></div>
 

@@ -11,7 +11,6 @@
  *
 */
 
-require_once(dirname(__FILE__)."/configs/dbconfig.inc.php");
 require_once(dirname(__FILE__)."/configs/functions.inc.php");
 
 if(isset($_GET["switchDevice"])){
@@ -44,6 +43,6 @@ else if(isset($_GET["saveJob"])) {
 }
 else {
 	http_response_code(500);
-	echo "request.php: parametri di chiamata non validi: ".$_SERVER['QUERY_STRING'];
+	echo $L_MSG_ERROR_INVALID_DATA.": ".$_SERVER['QUERY_STRING'];
 }
 ?>

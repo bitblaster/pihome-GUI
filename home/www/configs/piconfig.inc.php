@@ -11,11 +11,15 @@
  *
 */
 
-// MySql Daten
+// MySql config
 $config['DB_HOST'] 					= "localhost";
 $config['DB_USER'] 					= "root";
 $config['DB_PWD'] 					= "root";
 $config['DB_NAME'] 					= "pihome";
 $config['prefix']					= "ph_";
+
+$config['pi_server_url']			= "http://localhost:8444";
+$config['encrypt_iv']				= "12345678";
+$config['encrypt_passphrase']		= "1234567890abcdef";
 
 ?>

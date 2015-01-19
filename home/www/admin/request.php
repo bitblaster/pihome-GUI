@@ -16,7 +16,7 @@ require_once("access.php");
 $what = $_GET['w'];   # device or group
 $opp =  $_GET['o'];   # insert, update, delete, ( enable only device )
 
-error_log("Ci siamo: ".$what.", op:".$opp);
+//error_log("Request received: ".$what.", op:".$opp);
 
 $ret=0;
 if($what=="device"){ 
@@ -35,13 +35,13 @@ if($what=="device"){
         $result = mysql_query("SELECT count(*) FROM pi_devices WHERE LOWER(device)='".strtolower($device_name)."' AND id!='".$wid."'");
         if($result && mysql_result($result, 0, 0) > 0) {
             http_response_code(500);
-            echo "Nome dispositivo già utilizzato: '".$device_name."'";
+            echo $L_MSG_ERROR_DEVICE_NAME_ALREADY_USED.": '".$device_name."'";
             die();
         }
         $result = mysql_query("SELECT count(*) FROM pi_devices WHERE flags='".$device_flags."' AND code='".$device_code."' AND id!='".$wid."'");
         if($result && mysql_result($result, 0, 0) > 0) {
             http_response_code(500);
-            echo "Combinazione flags-tasto comando già utilizzata: '".$device_flags."-".$device_code."'";
+            echo $L_MSG_ERROR_FLAG_COMMAND_ALREADY_USED.": '".$device_flags."-".$device_code."'";
             die();
         }
         
@@ -86,7 +86,6 @@ if($what=="device"){
         $ret=TRUE;
         foreach($orderArray as $i => $deviceId) {
             $sql_da_update = "UPDATE `pi_devices` SET `sort`=".$i." WHERE `id`='".$deviceId."'";
-            error_log("eseguiamo la query: " + $sql_da_update);
             $ret = $ret && mysql_query($sql_da_update);
             error_log("ret: " + $ret);
             if(!$ret)
@@ -99,7 +98,6 @@ if($what=="device"){
 }
 elseif($what=="group") {
 	#insert & update group
-    error_log("siamo in group");
     
 	if($opp=="insert") {
         $group_name = $_GET['group_name'];
@@ -121,7 +119,7 @@ elseif($what=="group") {
         $result = mysql_query("SELECT count(*) FROM pi_devices WHERE group_id='".$wid."'");
         if($result && mysql_result($result, 0, 0) > 0) {
             http_response_code(500);
-            echo "Impossibile eliminare un gruppo che contiene dispositivi!";
+            echo $L_MSG_ERROR_GROUP_CONTAINS_DEVICES;
             die();
         }
 		$sql_delete_group = "DELETE FROM pi_groups WHERE id = ".$wid;
@@ -132,6 +130,6 @@ elseif($what=="group") {
 
 if(!$ret) {
 	http_response_code(500);
-	echo "Dati non validi";
+	echo $L_MSG_ERROR_INVALID_DATA.": ".$_SERVER['QUERY_STRING'];
 }
 ?>

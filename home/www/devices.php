@@ -1,5 +1,4 @@
 <?
-require_once(dirname(__FILE__)."/configs/dbconfig.inc.php");
 require_once(dirname(__FILE__)."/configs/functions.inc.php");
 
 $groupId=$_GET["group"];
@@ -54,7 +53,7 @@ if($i==0) {
 ?>
     <tr>
         <td class="deviceName" colspan="3">
-            <div class="device"><i>Nessun dispositivo presente</i></div>
+            <div class="device"><i><?=$L_NO_DEVICES?></i></div>
         </td>
     </tr>
 <?

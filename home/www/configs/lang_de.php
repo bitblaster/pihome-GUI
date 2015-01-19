@@ -1,5 +1,7 @@
 <?
 
+//TODO: translate
+
 // Generic
 $L_TITLE="PiHome";
 $L_ALL_OFF="ALL OFF";

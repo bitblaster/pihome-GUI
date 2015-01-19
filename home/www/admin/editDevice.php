@@ -35,10 +35,10 @@ else {
 
 ?>
 <form id="formDevice_<?=$wid?>" method="post">
-    Nome dispositivo:<br>
+    <?=$L_EDIT_DEVICE_NAME?>:<br>
     <input type="text" name="device_name" value="<?=utf8_encode($dataRow['device'])?>">
     <br><br>
-    Flag comando:<br>
+    <?=$L_EDIT_DEVICE_FLAGS?>:<br>
     <span class="flags">
         <? for ($x = ord('A'); $x <= ord('C'); $x++) {
              if (strpos($dataRow['flags'], $x) !== false) { ?>
@@ -49,7 +49,7 @@ else {
         <? } ?>
     </span>
     <br><br>
-    Tasto comando:<br>
+    <?=$L_EDIT_DEVICE_COMMAND?>:<br>
     <select name="code">
         <? for ($x = 2; $x <= 12; $x+=2) {
              if($dataRow['code']==$x){ ?>
@@ -60,17 +60,17 @@ else {
         <? } ?>
     </select>
     <br><br>
-    Tipo interruttore:<br>
+    <?=$L_EDIT_DEVICE_SWITCH_TYPE?>:<br>
     <select name="type">
-        <option value="simpleSwitch" <?=$dataRow['type']=='simpleSwitch' ? ' selected' : ''?>>Interruttore semplice (impulso inverte lo stato)</option>
-        <option value="delaySwitch" <?=$dataRow['type']=='delaySwitch' ? ' selected' : ''?>>Interruttore con delay (impulso breve spegne, impulso lungo accende)</option>
+        <option value="simpleSwitch" <?=$dataRow['type']=='simpleSwitch' ? ' selected' : ''?>><?=$L_EDIT_DEVICE_SIMPLE_SWITCH?></option>
+        <option value="delaySwitch" <?=$dataRow['type']=='delaySwitch' ? ' selected' : ''?>><?=$L_EDIT_DEVICE_DELAY_SWITCH?></option>
     </select>
     <br><br>
-    Presenza interruttore locale:<br>
+    <?=$L_EDIT_DEVICE_LOCAL_SWITCH?>:<br>
     <select name="status">
-        <option value="<?=$dataRow['status']=='-1' ? '0' : $dataRow['status'] ?>" <?=$dataRow['status']=='-1' ? '' : 'selected' ?>>No</option>
-        <option value="-1" <?=$dataRow['status']=='-1' ? 'selected' : '' ?>>Sì</option>
+        <option value="<?=$dataRow['status']=='-1' ? '0' : $dataRow['status'] ?>" <?=$dataRow['status']=='-1' ? '' : 'selected' ?>><?=$L_NO?></option>
+        <option value="-1" <?=$dataRow['status']=='-1' ? 'selected' : '' ?>><?=$L_YES?></option>
     </select>
-    <br><br>				
-    <span class="submit"><input type="button" onclick="editDeviceSend(<?=$wid;?>,<?=$groupId?>)" value="<?=$wid != '-1' ? 'Update device' : 'Add device'?>"></span>	
+    <br><br>
+    <button class="submit button-on pure-button" data-role="none" onclick="editDeviceSend(<?=$wid;?>,<?=$groupId?>)"><?=$wid != '-1' ? $L_EDIT_DEVICE_UPDATE : $L_EDIT_DEVICE_ADD?></button>
 </form>

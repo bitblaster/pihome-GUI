@@ -17,7 +17,7 @@ $adminArea=1;
 ?>
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head>
-<title>PiHome - Pannello di controllo</title>
+<title><?=$L_ADMIN_TITLE?></title>
 <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
 <meta http-equiv="Content-Style-Type" content="text/css" />
 <meta name="viewport" content="width=device-width, user-scalable=no" />
@@ -41,9 +41,15 @@ $adminArea=1;
 			<span style="font-size: 2.3em;color: #ABABAB">Pi</span>
 			<span style="font-size: 2.3em">Home</span>
 			<br/>
-			<span style="font-size: 0.8em">&nbsp;administration panel</span>
+			<span style="font-size: 0.8em">&nbsp;<?=$L_ADMIN_SUBTITLE?></span>
 		</span>
 	</div>
+	<div class="separator"><span style="border-left: 1px solid #565656; height: 3em"></span></div>
+	
+<?
+    require_once("../configs/language.inc.php");
+?>    
+
 	<div class="separator"><span style="border-left: 1px solid #565656; height: 3em"></span></div>
 	
 	<a href="access.php?p=logout">

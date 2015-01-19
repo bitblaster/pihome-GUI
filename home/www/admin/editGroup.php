@@ -16,7 +16,6 @@ require_once("access.php");
 $wid = $_GET["w"];
 
 $dataRow = array();
-error_log("Eccoci333: ".$dataRow['group_name']);
 
 if($wid != "-1") {
     dbconnect();
@@ -27,8 +26,8 @@ if($wid != "-1") {
 
 ?>
 <form id="formGroup_<?=$wid?>" method="post">
-	Nome Gruppo:<br>
+	<?=$L_EDIT_GROUP_NAME?><br>
 	<input type="text" name="groupName" value="<?=utf8_encode($dataRow['group_name']);?>">
 	<br><br>
-	<span class="submit"><input type="button" onclick="editGroupSend(<?=$wid?>);" value="<?=$wid != '-1' ? 'Update group' : 'Add group'?>"></span>
+	<button class="submit button-on pure-button" data-role="none" onclick="editGroupSend(<?=$wid?>)"><?=$wid != '-1' ? $L_EDIT_GROUP_UPDATE : $L_EDIT_GROUP_ADD?></button>
 </form>
