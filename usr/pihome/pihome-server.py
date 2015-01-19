@@ -1,6 +1,9 @@
 #!/usr/bin/python
 from apscheduler.triggers.cron import CronTrigger
 import sys
+from gi.overrides.keysyms import section
+
+###TODO: spostare le chiavi in un file di configurazione separato e cambiarle
 
 # PiHome v1.0
 # http://pihome.harkemedia.de/
@@ -10,6 +13,17 @@ import sys
 # 
 # This work is licensed under the Creative Commons Namensnennung - Nicht-kommerziell - Weitergabe unter gleichen Bedingungen 3.0 Unported License. To view a copy of this license,
 # visit: http://creativecommons.org/licenses/by-nc-sa/3.0/.
+
+# Config section
+config={}
+config['DB_HOST']             = "localhost";
+config['DB_USER']             = "root";
+config['DB_PWD']              = "root";
+config['DB_NAME']             = "pihome";
+
+config['encrypt_iv']          = "12345678";
+config['encrypt_passphrase']  = "1234567890abcdef";
+config['server_port']         = "8444";
 
 if len(sys.argv) > 1 and sys.argv[1] == "1":
     DEBUG=1
@@ -22,6 +36,7 @@ import time
 if not DEBUG:
     import RPi.GPIO as GPIO
 import cgi,time,string,datetime
+import urlparse
 from os import curdir, sep, path
 from BaseHTTPServer import BaseHTTPRequestHandler, HTTPServer
 from Crypto.Cipher import Blowfish
@@ -57,6 +72,7 @@ ioPorts={"2":11, "4":12, "6":13, "8":15, "10":16, "12":18, "A":19, "B": 21, "C":
 
 devicesByName={}
 devicesById={}
+knownClients={}
 
 threadLock = threading.Lock()
 scheduler = BackgroundScheduler()
@@ -76,13 +92,26 @@ class Handler(BaseHTTPRequestHandler):
             #print "Path: " + self.path
             encryptedString = str(self.path)[1:]
             #print "Enc string: " + encryptedString
-            cipher = Blowfish.new('daFj7mGJHo956SIg', Blowfish.MODE_CBC, '43093287')
-            datastring = cipher.decrypt(base64.urlsafe_b64decode(encryptedString))
-            outStr=""
+            cipher = Blowfish.new(config['encrypt_passphrase'], Blowfish.MODE_CBC, config['encrypt_iv'])
             # usiamo rstrip("\x00") per rimuovere caratteri terminatori di padding usati dal Blowfish
-            split = map(lambda x: x.rstrip("\x00").strip(), datastring.split("/"))
-            
+            datastring = cipher.decrypt(base64.urlsafe_b64decode(encryptedString)).rstrip("\x00")
             logging.debug("Decrypted datastring: " + datastring)
+
+            outStr=""
+            
+            parsed = urlparse.urlparse(datastring)
+            additionalArgs=urlparse.parse_qs(parsed.query)
+            if "client" in additionalArgs and "time" in additionalArgs:
+                client =  additionalArgs["client"][0]
+                timestamp = int(additionalArgs["time"][0])
+                if client in knownClients:
+                    lastTimestamp = knownClients[client]
+                    if lastTimestamp >= timestamp:
+                        raise Exception, "Invalid request"
+                    
+                knownClients[client] = timestamp
+             
+            split = parsed.path.split("/")
             
             if split[0] == "switchDevice":
                 if len(split) < 3:
@@ -268,7 +297,7 @@ def executeCommand(deviceId, action, scheduled):
             self.send_error(500, str(msg))
         
 def loadDevices():
-    con = mdb.connect('localhost', 'root', 'root', 'pihome')
+    con = mdb.connect(config['DB_HOST'], config['DB_USER'], config['DB_PWD'], config['DB_NAME'])
     cur = con.cursor()
     cur.execute("select id, device, flags, code, type, status from pi_devices")
     rows = cur.fetchall()
@@ -286,9 +315,7 @@ def main():
         logging.info('-------- PiHome startup --------')
         loadDevices()
         
-        scheduler.add_jobstore('sqlalchemy', url='mysql://root:root@localhost/pihome')
-        #scheduler.add_job(scheduledAction, 'cron', month='6-8,11-12', day='3rd fri', hour='0-3')
-        #scheduler.add_job(scheduledAction, 'cron', month='1,2,3', hour='3', minute="18")
+        scheduler.add_jobstore('sqlalchemy', url='mysql://' + config['DB_USER'] + ':' + config['DB_PWD'] + '@' + config['DB_HOST'] + '/' + config['DB_NAME'])
         scheduler.start()
     
         srv = HTTPServer(('', 8444), Handler)
