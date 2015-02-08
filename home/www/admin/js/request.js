@@ -139,7 +139,6 @@ function saveReorder(groupId, ui) {
     
     // Call the server to update the items order
     var params = "?w=device&o=reorder&groupId=" + groupId + "&order=" + deviceOrder.join(",");
-    alert(params);
 	request('request.php', 'GET', params, function(){ } );
 };
 

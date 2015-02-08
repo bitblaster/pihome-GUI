@@ -72,6 +72,7 @@ ioPorts={"2":11, "4":12, "6":13, "8":15, "10":16, "12":18, "A":19, "B": 21, "C":
 
 devicesByName={}
 devicesById={}
+groups={}
 knownClients={}
 
 threadLock = threading.Lock()
@@ -145,9 +146,19 @@ class Handler(BaseHTTPRequestHandler):
                     executeManualCommand(device["id"], action)
                 else:
                     raise Exception, "No device found matching '" + split[1] + "'"
-            elif split[0] == "allOff":
-                logging.info("Executing allOff")
-                executeManualCommand("all", "off")
+            elif split[0] == "allOff" or split[0] == "allOn":
+                if len(split) < 2:
+                    raise Exception, "Not enough parameters for command switchDeviceFuzzy. Datastring: " + datastring
+               
+                if split[1].startswith("group:"):
+                    groupName = split[1].split(":")[1]
+                    if groupName == "all" or groupName in groups:
+                        logging.info("Executing allOff on group: " + groupName)
+                        executeManualCommand(split[1], "off" if split[0] == "allOff" else "on")
+                    else:
+                        raise Exception, "Invalid group for command allOff: " + groupName
+                else:
+                    raise Exception, "Invalid parameter for command allOff: " + split[1]
             elif split[0] == "reloadDevices":
                 logging.info("Executing reloadDevices")
                 loadDevices()
@@ -233,10 +244,17 @@ def executeManualCommand(deviceId, action):
     #executeCommand(deviceId, action, False)
 
 def executeCommand(deviceId, action, scheduled):
-    # Commands spanning all devices are executed passing deviceId="all"
-    if deviceId == "all":
-        for id in devicesById.keys():
-            executeCommand(id, action, scheduled)
+    # Commands spanning all devices in a group are executed passing deviceId="group:xxx"
+    if deviceId.startswith("group:"):
+        groupName = deviceId.split(":")[1]
+        if groupName == "all":
+            for id in devicesById.keys():
+                executeCommand(id, action, scheduled)
+        else:
+            if groupName in groups:
+               groupDevices = groups[groupName]
+               for device in groupDevices:
+                   executeCommand(device["id"], action, scheduled)
         return
         
     device = devicesById[deviceId]
@@ -306,13 +324,23 @@ def executeCommand(deviceId, action, scheduled):
             self.send_error(500, str(msg))
         
 def loadDevices():
+    devicesByName.clear()
+    devicesById.clear()
+    groups.clear()
+    
     con = mdb.connect(config['DB_HOST'], config['DB_USER'], config['DB_PWD'], config['DB_NAME'])
     cur = con.cursor()
-    cur.execute("select id, device, flags, code, type, status from pi_devices")
+    cur.execute("select d.id, d.device, d.flags, d.code, d.type, d.status, g.id, g.group_name from pi_devices d join pi_groups g on g.id=d.group_id")
     rows = cur.fetchall()
     for row in rows:
-        devicesByName[row[1]]={"id":str(row[0]), "name":row[1], "flags":row[2], "code":row[3]}
-        devicesById[str(row[0])]={"name":row[1], "flags":row[2], "code":row[3], "type":row[4], "status":row[5]}
+        device = {"id":str(row[0]), "name":row[1], "flags":row[2], "code":row[3], "type":row[4], "status":row[5], "group_id":str(row[6]), "group_name":row[7]}
+        devicesByName[row[1]] = device
+        devicesById[str(row[0])] = device
+        if not str(row[6]) in groups:
+            groups[str(row[6])]=[]
+        
+        groups[str(row[6])].append(device)
+        
     cur.close()
     con.close()
     

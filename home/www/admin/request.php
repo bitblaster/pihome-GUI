@@ -94,7 +94,7 @@ if($what=="device"){
 	}
 	
 	if($ret)
-		callPiServer("reloadDevices"));
+		callPiServer("reloadDevices");
 }
 elseif($what=="group") {
 	#insert & update group

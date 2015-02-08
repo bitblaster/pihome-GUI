@@ -42,7 +42,14 @@ else if(isset($_GET["saveJob"])) {
 	callPiServer($requestString);
 }
 else if(isset($_GET["allOff"])) {
-	callPiServer("allOff");
+	$group = $_GET["allOff"];
+	$requestString = "allOff/group:".$group;
+	callPiServer($requestString);
+}
+else if(isset($_GET["allOn"])) {
+	$group = $_GET["allOn"];
+	$requestString = "allOn/group:".$group;
+	callPiServer($requestString);
 }
 else {
 	http_response_code(500);

@@ -25,8 +25,24 @@ function refresh(){
  
 function allOff(){
  	if(confirm('All Devices off?')){
-		request('request.php', 'GET', {"allOff": "1"}, function() {
+		request('request.php', 'GET', {"allOff": "all"}, function() {
 			$(".lampImg").attr("src", "images/lamp_off.svg");
+		});
+	}
+}
+
+function allOffGroup(groupId){
+ 	if(confirm('All Devices off?')){
+		request('request.php', 'GET', {"allOff": groupId}, function() {
+			$("groupDevices_" + groupId + "->.lampImg").attr("src", "images/lamp_off.svg");
+		});
+	}
+}
+
+function allOnGroup(groupId){
+ 	if(confirm('All Devices on?')){
+		request('request.php', 'GET', {"allOn": groupId}, function() {
+			$("groupDevices_" + groupId + "->.lampImg").attr("src", "images/lamp_on.svg");
 		});
 	}
 }

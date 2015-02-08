@@ -9,13 +9,18 @@ $rp=getGroups();
 for($x=0;$x<count($rp);$x++) {
 ?>    
     <tr <?= $x>0 ? 'class="separator"' : ''?>>
-        <td colspan="<?=$adminArea==1 ? '1' : '2'?>" style="cursor: pointer" onclick="expandGroup('<?=$rp[$x]["id"];?>', '<?=$adminArea?>')">
+        <td style="cursor: pointer" onclick="expandGroup('<?=$rp[$x]["id"];?>', '<?=$adminArea?>')">
             <div class="groupName" id="groupName_<?=$rp[$x]["id"];?>"><?=utf8_encode($rp[$x]["group"]);?></div><span style="display: inline-block">&nbsp;&gt;</span>
         </td>
         <? if($adminArea==1) { ?>
         <td class="btn">
             <button class="button-on pure-button" data-role="none" onclick="editGroup('<?=$rp[$x]["id"];?>');"><img class="buttonImg" src="images/edit.svg" /></button>
             <button class="button-off pure-button" data-role="none" onclick="deleteGroup('<?=$rp[$x]["id"];?>');return false;"><img class="buttonImg" src="images/delete.svg" /></button>
+        </td>
+        <? } else { ?>
+        <td class="btn">
+            <button class="button-on pure-button" data-role="none" onclick="allOnGroup('<?=$rp[$x]["id"];?>');"><?=$L_ON?></button>
+            <button class="button-off pure-button" data-role="none" onclick="allOffGroup('<?=$rp[$x]["id"];?>');"><?=$L_OFF?></button>
         </td>
         <? } ?>
     </tr>
