@@ -1,7 +1,5 @@
 #!/usr/bin/python
-from apscheduler.triggers.cron import CronTrigger
 import sys
-from gi.overrides.keysyms import section
 
 ###TODO: spostare le chiavi in un file di configurazione separato e cambiarle
 
@@ -25,27 +23,32 @@ config['encrypt_iv']          = "12345678";
 config['encrypt_passphrase']  = "1234567890abcdef";
 config['server_port']         = "8444";
 
-if len(sys.argv) > 1 and sys.argv[1] == "1":
-    DEBUG=1
-    LOG_PATH="pihome.log"
+if len(sys.argv) > 1:
+    LOG_PATH=sys.argv[1]
+    class GPIO:
+        BOARD = 1
+        OUT = True
+        @staticmethod
+        def setmode(mode): print "setmode %d" % mode
+        @staticmethod
+        def setup(port, output): print "setup port %d to %s" % (port, output)
+        @staticmethod
+        def output(port, output): print "output port %d to %s" % (port, output)
+        @staticmethod
+        def cleanup(): print "cleanup"
 else:
-    DEBUG=0
     LOG_PATH="/var/log/pihome.log"
+    import RPi.GPIO as GPIO #@UnresolvedImport
     
+import string
 import time
-if not DEBUG:
-    import RPi.GPIO as GPIO
-import cgi,time,string,datetime
 import urlparse
-from os import curdir, sep, path
 from BaseHTTPServer import BaseHTTPRequestHandler, HTTPServer
 from Crypto.Cipher import Blowfish
 import base64
 import MySQLdb as mdb
-from fuzzywuzzy import fuzz
 from fuzzywuzzy import process
 from apscheduler.schedulers.background import BackgroundScheduler
-from datetime import datetime, timedelta
 import json
 import logging
 import threading
@@ -64,8 +67,7 @@ logging.getLogger().setLevel(logging.DEBUG)
 #logging.basicConfig(filename='/var/log/pihome.log',level=logging.DEBUG)
 
 # Set to use IO No.
-if not DEBUG:
-    GPIO.setmode(GPIO.BOARD)
+GPIO.setmode(GPIO.BOARD)
 
 # Mappatura pulsanti telecomando / GPIO del Raspberry
 ioPorts={"2":11, "4":12, "6":13, "8":15, "10":16, "12":18, "A":19, "B": 21, "C":23}
@@ -81,9 +83,8 @@ scheduler = BackgroundScheduler()
 logging.info("Setup GPIO ports: " + ", ".join(str(x) for x in ioPorts.values()))
              
 for k, port in ioPorts.iteritems():
-    if not DEBUG:
-        GPIO.setup(port, GPIO.OUT)
-        GPIO.output(port, False)
+    GPIO.setup(port, GPIO.OUT)
+    GPIO.output(port, False)
 
 class Handler(BaseHTTPRequestHandler):
     def do_GET(self):
@@ -125,7 +126,7 @@ class Handler(BaseHTTPRequestHandler):
                 if action not in ["on", "off", "toggle"]:
                     raise Exception, "Invalid action for command request: " + action
                     
-                executeManualCommand(deviceId, action)
+                self.executeManualCommand(deviceId, action)
             elif split[0] == "switchDeviceFuzzy":
                 if len(split) < 2:
                     raise Exception, "Not enough parameters for command switchDeviceFuzzy. Datastring: " + datastring
@@ -143,7 +144,7 @@ class Handler(BaseHTTPRequestHandler):
                     else:
                         raise Exception, "Invalid action for command switchDeviceFuzzy: " + split[1]
                     
-                    executeManualCommand(device["id"], action)
+                    self.executeManualCommand(device["id"], action)
                 else:
                     raise Exception, "No device found matching '" + split[1] + "'"
             elif split[0] == "allOff" or split[0] == "allOn":
@@ -154,7 +155,7 @@ class Handler(BaseHTTPRequestHandler):
                     groupName = split[1].split(":")[1]
                     if groupName == "all" or groupName in groups:
                         logging.info("Executing allOff on group: " + groupName)
-                        executeManualCommand(split[1], "off" if split[0] == "allOff" else "on")
+                        self.executeManualCommand(split[1], "off" if split[0] == "allOff" else "on")
                     else:
                         raise Exception, "Invalid group for command allOff: " + groupName
                 else:
@@ -188,7 +189,7 @@ class Handler(BaseHTTPRequestHandler):
                 
                 #job = scheduler.add_job(scheduledAction, 'cron', coalesce=True, id=None, args=[deviceId, "disabled"], year="*", month="*", day="*", day_of_week="*", hour="*", minute="*", second="0")
                 triggerArgs = {"year":"*", "month":"*", "day":"*", "day_of_week":"*", "hour":"*", "minute":"*", "second":"0"}
-                job = scheduler.add_job(executeScheduledCommand, trigger='cron', coalesce=True, id=None, args=[deviceId, "disabled"], **triggerArgs)
+                job = scheduler.add_job(self.executeScheduledCommand, trigger='cron', coalesce=True, id=None, args=[deviceId, "disabled"], **triggerArgs)
                 scheduler.pause_job(job.id)
             elif split[0] == "saveJob":
                 jsonString = split[1]
@@ -203,7 +204,7 @@ class Handler(BaseHTTPRequestHandler):
                 f = {key : ','.join(value) for key, value in cronFields.iteritems()}
                 
                 triggerArgs = {"year":f["year"], "month":f["month"], "day":f["day"], "day_of_week":f["day_of_week"], "hour":f["hour"], "minute":f["minute"], "second":f["second"]}
-                job = scheduler.add_job(executeScheduledCommand, trigger='cron', coalesce=True, id=jobId, args=[deviceId, action], replace_existing=True, **triggerArgs)
+                job = scheduler.add_job(self.executeScheduledCommand, trigger='cron', coalesce=True, id=jobId, args=[deviceId, action], replace_existing=True, **triggerArgs)
 
                 #trigger = CronTrigger(year=f["year"], month=f["month"], day=f["day"], day_of_week=f["day_of_week"], hour=f["hour"], minute=f["minute"], second=f["second"])
                 #jobFields = {"trigger": trigger, "args": [deviceId, action]}
@@ -211,7 +212,7 @@ class Handler(BaseHTTPRequestHandler):
                 if action == "disabled":
                     scheduler.pause_job(job.id)
                 #else:
-                 #   scheduler.pause_job(job.id)
+                #   scheduler.pause_job(job.id)
             elif split[0] == "removeJob":
                 jobId = split[1]
                 logging.info("Executing removeJob for job: " + jobId)
@@ -235,93 +236,89 @@ class Handler(BaseHTTPRequestHandler):
             logging.exception(msg)
             self.send_error(500, str(msg))
 
-def executeScheduledCommand(deviceId, action):
-    executeCommand(deviceId, action, True)
+    def executeScheduledCommand(self, deviceId, action):
+        self.executeCommand(deviceId, action, True)
+        
+    def executeManualCommand(self, deviceId, action):
+        t = threading.Thread(target=self.executeCommand, args=(deviceId, action, False))
+        t.start()
+        #executeCommand(deviceId, action, False)
     
-def executeManualCommand(deviceId, action):
-    t = threading.Thread(target=executeCommand, args=(deviceId, action, False))
-    t.start()
-    #executeCommand(deviceId, action, False)
-
-def executeCommand(deviceId, action, scheduled):
-    # Commands spanning all devices in a group are executed passing deviceId="group:xxx"
-    if deviceId.startswith("group:"):
-        groupName = deviceId.split(":")[1]
-        if groupName == "all":
-            for id in devicesById.keys():
-                executeCommand(id, action, scheduled)
-        else:
-            if groupName in groups:
-               groupDevices = groups[groupName]
-               for device in groupDevices:
-                   executeCommand(device["id"], action, scheduled)
-        return
-        
-    device = devicesById[deviceId]
-    flags = device["flags"]
-    code = device["code"]
-    
-    # Get lock to synchronize threads
-    logging.debug("Acquiring lock...")
-    threadLock.acquire()
-
-    try:
-        logging.debug("Lock acquired!")
-        
-        logStr = "Flag ports: "
-        for flag in flags:
-            logStr += str(ioPorts[flag]) + ","
-            if not DEBUG:
-                GPIO.output(ioPorts[flag], True)
-        logStr = logStr [:-1] + ". "
-        logStr += "Command port:" + str(ioPorts[code])
-        logging.debug(logStr)
-        
-        # Ci assicuriamo che il transistor abbia switchato nel telecomando
-        time.sleep(0.05)
-        
-        if not DEBUG:
-            GPIO.output(ioPorts[code], True)
-        if action == "off":
-            delay=0.2
-        else:
-            delay=1
-            
-        logging.debug("Sleeping for: " + str(delay) + " seconds")
-        time.sleep(delay)
-        
-        if not DEBUG:
-            GPIO.output(ioPorts[code], False)
-        
-        for flag in flags:
-            if not DEBUG:
-                GPIO.output(ioPorts[flag], False)
-    except Exception, msg:
-        logging.exception(msg)
-        if not scheduled:
-            raise
-        
-    # Free lock to release next thread
-    threadLock.release()
-    logging.debug("Lock released!")
-
-    if device is not None and device["type"] == "delaySwitch" and device["status"] != "-1":
-        try:
-            logging.debug("Cambio stato al dispositivo" + str(device))
-            con = mdb.connect('localhost', 'root', 'root', 'pihome')
-            cur = con.cursor()
-            if action == "off":
-                status="0"
+    def executeCommand(self, deviceId, action, scheduled):
+        # Commands spanning all devices in a group are executed passing deviceId="group:xxx"
+        if deviceId.startswith("group:"):
+            groupName = deviceId.split(":")[1]
+            if groupName == "all":
+                for gid in devicesById.keys():
+                    self.executeCommand(gid, action, scheduled)
             else:
-                status="1"
+                if groupName in groups:
+                    groupDevices = groups[groupName]
+                    for device in groupDevices:
+                        self.executeCommand(device["id"], action, scheduled)
+            return
+            
+        device = devicesById[deviceId]
+        flags = device["flags"]
+        code = device["code"]
         
-            cur.execute ("UPDATE pi_devices SET status=%s WHERE id=%s", (status, deviceId))
-            con.commit()
-            cur.close()
-            con.close()
+        # Get lock to synchronize threads
+        logging.debug("Acquiring lock...")
+        threadLock.acquire()
+    
+        try:
+            logging.debug("Lock acquired!")
+            
+            logStr = "Flag ports: "
+            for flag in flags:
+                logStr += str(ioPorts[flag]) + ","
+                GPIO.output(ioPorts[flag], True)
+            logStr = logStr [:-1] + ". "
+            logStr += "Command port:" + str(ioPorts[code])
+            logging.debug(logStr)
+            
+            # Ci assicuriamo che il transistor abbia switchato nel telecomando
+            time.sleep(0.05)
+            
+            GPIO.output(ioPorts[code], True)
+            if action == "off":
+                delay=0.2
+            else:
+                delay=1
+                
+            logging.debug("Sleeping for: " + str(delay) + " seconds")
+            time.sleep(delay)
+            
+            GPIO.output(ioPorts[code], False)
+            
+            for flag in flags:
+                GPIO.output(ioPorts[flag], False)
         except Exception, msg:
             logging.exception(msg)
-            self.send_error(500, str(msg))
+            if not scheduled:
+                raise
+            
+        # Free lock to release next thread
+        threadLock.release()
+        logging.debug("Lock released!")
+    
+        if device is not None and device["type"] == "delaySwitch" and device["status"] != "-1":
+            try:
+                logging.debug("Cambio stato al dispositivo" + str(device))
+                con = mdb.connect('localhost', 'root', 'root', 'pihome')
+                cur = con.cursor()
+                if action == "off":
+                    status="0"
+                else:
+                    status="1"
+            
+                cur.execute ("UPDATE pi_devices SET status=%s WHERE id=%s", (status, deviceId))
+                con.commit()
+                cur.close()
+                con.close()
+            except Exception, msg:
+                logging.exception(msg)
+                self.send_error(500, str(msg))
         
 def loadDevices():
     devicesByName.clear()
@@ -360,8 +357,7 @@ def main():
         srv.serve_forever()
     except KeyboardInterrupt:
         logging.info('PiHome Server STOPPED')
-        if not DEBUG:
-            GPIO.cleanup()
+        GPIO.cleanup()
         srv.socket.close()
 
 if __name__ == '__main__':
