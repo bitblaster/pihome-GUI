@@ -1,7 +1,7 @@
 #!/usr/bin/python
-import sys
+# -*- coding: utf-8 -*- 
 
-###TODO: spostare le chiavi in un file di configurazione separato e cambiarle
+import sys
 
 # PiHome v1.0
 # http://pihome.harkemedia.de/
@@ -11,17 +11,6 @@ import sys
 # 
 # This work is licensed under the Creative Commons Namensnennung - Nicht-kommerziell - Weitergabe unter gleichen Bedingungen 3.0 Unported License. To view a copy of this license,
 # visit: http://creativecommons.org/licenses/by-nc-sa/3.0/.
-
-# Config section
-config={}
-config['DB_HOST']             = "localhost";
-config['DB_USER']             = "root";
-config['DB_PWD']              = "root";
-config['DB_NAME']             = "pihome";
-
-config['encrypt_iv']          = "12345678";
-config['encrypt_passphrase']  = "1234567890abcdef";
-config['server_port']         = "8444";
 
 if len(sys.argv) > 1:
     LOG_PATH=sys.argv[1]
@@ -52,7 +41,10 @@ from apscheduler.schedulers.background import BackgroundScheduler
 import json
 import logging
 import threading
+from config import Config
+import serial
 
+serialPort = serial.Serial("/dev/ttyAMA0", baudrate=115200, timeout=3.0)
 logFormatter = logging.Formatter("%(asctime)s [%(threadName)-12.12s] [%(levelname)-5.5s]  %(message)s")
 
 fileHandler = logging.FileHandler(LOG_PATH)
@@ -94,7 +86,7 @@ class Handler(BaseHTTPRequestHandler):
             #print "Path: " + self.path
             encryptedString = str(self.path)[1:]
             #print "Enc string: " + encryptedString
-            cipher = Blowfish.new(config['encrypt_passphrase'], Blowfish.MODE_CBC, config['encrypt_iv'])
+            cipher = Blowfish.new(Config.get('encrypt_passphrase'), Blowfish.MODE_CBC, Config.get('encrypt_iv'))
             # usiamo rstrip("\x00") per rimuovere caratteri terminatori di padding usati dal Blowfish
             datastring = cipher.decrypt(base64.urlsafe_b64decode(encryptedString)).rstrip("\x00")
             logging.debug("Decrypted datastring: " + datastring)
@@ -137,9 +129,9 @@ class Handler(BaseHTTPRequestHandler):
                     device = devicesByName[deviceFound[0]]
                     logging.debug("Matched device '" + device["name"] + "'")
                     
-                    if "accend" in split[1] or "attiv" in split[1] or "invert" in split[1]:
+                    if "enable" in split[1] or "accend" in split[1] or "attiv" in split[1] or "toggle" in split[1] or "invert" in split[1]:
                         action = "on"
-                    elif "spegn" in split[1] or "disattiv" in split[1]:
+                    elif "disable" in split[1] or "spegn" in split[1] or "disattiv" in split[1]:
                         action = "off"
                     else:
                         raise Exception, "Invalid action for command switchDeviceFuzzy: " + split[1]
@@ -259,7 +251,6 @@ class Handler(BaseHTTPRequestHandler):
             return
             
         device = devicesById[deviceId]
-        flags = device["flags"]
         code = device["code"]
         
         # Get lock to synchronize threads
@@ -268,31 +259,54 @@ class Handler(BaseHTTPRequestHandler):
     
         try:
             logging.debug("Lock acquired!")
-            
-            logStr = "Flag ports: "
-            for flag in flags:
-                logStr += str(ioPorts[flag]) + ","
-                GPIO.output(ioPorts[flag], True)
-            logStr = logStr [:-1] + ". "
-            logStr += "Command port:" + str(ioPorts[code])
-            logging.debug(logStr)
-            
-            # Ci assicuriamo che il transistor abbia switchato nel telecomando
-            time.sleep(0.05)
-            
-            GPIO.output(ioPorts[code], True)
-            if action == "off":
-                delay=0.2
-            else:
-                delay=1
+        
+            if device["type"] == "konnex":
+                # First clear the KNX interface buffer
+                serialPort.write("@b")
+                serialPort.read()
                 
-            logging.debug("Sleeping for: " + str(delay) + " seconds")
-            time.sleep(delay)
-            
-            GPIO.output(ioPorts[code], False)
-            
-            for flag in flags:
-                GPIO.output(ioPorts[flag], False)
+                if action == "off":
+                    command = "@w0"+code;
+                else:
+                    command = "@w1"+code;
+                logging.debug("Sending KNX command: " + command)
+                serialPort.write(command)
+                resp = serialPort.read()
+                if resp != "k":
+                    raise Exception, "Error received from KNX adapter"
+                
+                time.sleep(0.5)
+                
+                serialPort.write("@r")
+                resp = serialPort.read(3)
+                if resp != "1CC":
+                    raise Exception, "Bad response received from KNX adapter: " + resp
+            else:
+                flags = device["flags"]
+                logStr = "Flag ports: "
+                for flag in flags:
+                    logStr += str(ioPorts[flag]) + ","
+                    GPIO.output(ioPorts[flag], True)
+                logStr = logStr [:-1] + ". "
+                logStr += "Command port:" + str(ioPorts[code])
+                logging.debug(logStr)
+                
+                # Ci assicuriamo che il transistor abbia switchato nel telecomando
+                time.sleep(0.05)
+                
+                GPIO.output(ioPorts[code], True)
+                if action == "off":
+                    delay=0.2
+                else:
+                    delay=1
+                    
+                logging.debug("Sleeping for: " + str(delay) + " seconds")
+                time.sleep(delay)
+                
+                GPIO.output(ioPorts[code], False)
+                
+                for flag in flags:
+                    GPIO.output(ioPorts[flag], False)
         except Exception, msg:
             logging.exception(msg)
             if not scheduled:
@@ -325,7 +339,7 @@ def loadDevices():
     devicesById.clear()
     groups.clear()
     
-    con = mdb.connect(config['DB_HOST'], config['DB_USER'], config['DB_PWD'], config['DB_NAME'])
+    con = mdb.connect(Config.get('db_host'), Config.get('db_user'), Config.get('db_pwd'), Config.get('db_name'))
     cur = con.cursor()
     cur.execute("select d.id, d.device, d.flags, d.code, d.type, d.status, g.id, g.group_name from pi_devices d join pi_groups g on g.id=d.group_id")
     rows = cur.fetchall()
@@ -349,16 +363,19 @@ def main():
         logging.info('-------- PiHome startup --------')
         loadDevices()
         
-        scheduler.add_jobstore('sqlalchemy', url='mysql://' + config['DB_USER'] + ':' + config['DB_PWD'] + '@' + config['DB_HOST'] + '/' + config['DB_NAME'])
+        scheduler.add_jobstore('sqlalchemy', url='mysql://' + Config.get('db_user') + ':' + Config.get('db_pwd') + '@' + Config.get('db_host') + '/' + Config.get('db_name'))
         scheduler.start()
     
-        srv = HTTPServer(('', 8444), Handler)
+        HOST, PORT = "", Config.getInt("server_port")
+        srv = HTTPServer((HOST, PORT), Handler)
         logging.info('PiHome Server STARTED')
         srv.serve_forever()
     except KeyboardInterrupt:
         logging.info('PiHome Server STOPPED')
         GPIO.cleanup()
         srv.socket.close()
+        serialPort.close()
+
 
 if __name__ == '__main__':
     main()
